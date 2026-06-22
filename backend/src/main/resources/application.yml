@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: word-forge
+  profiles:
+    default: dev
+
+management:
+  endpoints:
+    web:
+      base-path: /
+      exposure:
+        include: health
+  endpoint:
+    health:
+      probes:
+        enabled: true

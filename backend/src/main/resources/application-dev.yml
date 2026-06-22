@@ -1,0 +1,8 @@
+wordforge:
+  external-services:
+    translation:
+      provider: mock
+    tts:
+      provider: mock
+    enrichment:
+      provider: mock
