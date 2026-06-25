@@ -3,6 +3,16 @@ spring:
     name: word-forge
   profiles:
     default: dev
+  datasource:
+    url: jdbc:postgresql://localhost:5432/wordforge
+    username: wordforge
+    password: wordforge
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
 
 management:
   endpoints:
