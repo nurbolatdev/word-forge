@@ -20,14 +20,14 @@ class CardController {
     }
 
     @GetMapping
-    List<CardDto> getCards(@PathVariable Long listId, @RequestParam Long userId) {
+    List<CardDto> getCards(@PathVariable Long listId, @RequestAttribute Long userId) {
         return service.getCards(listId, userId);
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     CardDto addWord(@PathVariable Long listId,
-                   @RequestParam Long userId,
+                   @RequestAttribute Long userId,
                    @Valid @RequestBody AddWordRequest req) {
         return service.addWord(listId, userId, req);
     }
@@ -35,7 +35,7 @@ class CardController {
     @PatchMapping("/{cardId}/translations")
     CardDto selectTranslations(@PathVariable Long listId,
                                @PathVariable Long cardId,
-                               @RequestParam Long userId,
+                               @RequestAttribute Long userId,
                                @Valid @RequestBody SelectTranslationsRequest req) {
         return service.selectTranslations(cardId, userId, req.translationIds());
     }
@@ -44,7 +44,7 @@ class CardController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     void removeCard(@PathVariable Long listId,
                     @PathVariable Long cardId,
-                    @RequestParam Long userId) {
+                    @RequestAttribute Long userId) {
         service.removeCard(cardId, userId);
     }
 

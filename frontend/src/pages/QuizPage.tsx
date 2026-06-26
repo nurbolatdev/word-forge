@@ -3,8 +3,6 @@ import { listsApi } from '../api/lists';
 import { AnswerResult, QuizQuestion, quizApi } from '../api/quiz';
 import { AudioButton } from '../components/AudioButton';
 
-const USER_ID = 1;
-
 interface Props {
   onBack: () => void;
 }
@@ -25,17 +23,17 @@ export function QuizPage({ onBack }: Props) {
     setPhase('loading');
     try {
       // Get all user cards across all lists to build quiz
-      const allLists = await listsApi.getAll(USER_ID);
+      const allLists = await listsApi.getAll();
       const allCards = (await Promise.all(
-        allLists.map((l) => listsApi.getCards(l.id, USER_ID))
+        allLists.map((l) => listsApi.getCards(l.id))
       )).flat().filter((c) => c.chosenTranslationIds.length > 0);
 
       if (allCards.length === 0) { setPhase('empty'); return; }
 
       const cardIds = allCards.map((c) => c.id);
-      const round = await quizApi.startRound(USER_ID, cardIds);
+      const round = await quizApi.startRound(cardIds);
       setRoundId(round.id);
-      const q = await quizApi.getQuestion(round.id, USER_ID);
+      const q = await quizApi.getQuestion(round.id);
       setQuestion(q);
       startTime.current = Date.now();
       setPhase('question');
@@ -49,7 +47,7 @@ export function QuizPage({ onBack }: Props) {
     if (!roundId || !question) return;
     const responseTimeMs = Date.now() - startTime.current;
     try {
-      const res = await quizApi.submitAnswer(roundId, USER_ID, {
+      const res = await quizApi.submitAnswer(roundId, {
         cardId: question.cardId,
         chosenTranslationId: translationId,
         responseTimeMs,

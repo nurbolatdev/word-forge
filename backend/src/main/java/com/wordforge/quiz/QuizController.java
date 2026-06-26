@@ -19,19 +19,19 @@ class QuizController {
     }
 
     @PostMapping
-    QuizRoundDto startRound(@RequestParam Long userId,
+    QuizRoundDto startRound(@RequestAttribute Long userId,
                             @Valid @RequestBody StartRoundRequest req) {
         return service.startRound(userId, req.cardIds());
     }
 
     @GetMapping("/{roundId}/question")
-    QuizQuestionDto getQuestion(@PathVariable Long roundId, @RequestParam Long userId) {
+    QuizQuestionDto getQuestion(@PathVariable Long roundId, @RequestAttribute Long userId) {
         return service.getQuestion(roundId, userId);
     }
 
     @PostMapping("/{roundId}/answer")
     AnswerResultDto submitAnswer(@PathVariable Long roundId,
-                                @RequestParam Long userId,
+                                @RequestAttribute Long userId,
                                 @Valid @RequestBody AnswerRequest req) {
         return service.submitAnswer(roundId, userId, req.cardId(),
                 req.chosenTranslationId(), req.responseTimeMs());

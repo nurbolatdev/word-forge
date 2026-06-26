@@ -5,8 +5,6 @@ import { AudioButton } from '../components/AudioButton';
 import { EnrichmentPanel } from '../components/EnrichmentPanel';
 import { TranslationPicker } from '../components/TranslationPicker';
 
-const USER_ID = 1;
-
 interface Props {
   list: WordList;
   onBack: () => void;
@@ -27,7 +25,7 @@ export function ListPage({ list, onBack }: Props) {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    listsApi.getCards(list.id, USER_ID).then(setCards).catch(console.error);
+    listsApi.getCards(list.id).then(setCards).catch(console.error);
   }, [list.id]);
 
   async function lookupTranslations() {
@@ -48,11 +46,11 @@ export function ListPage({ list, onBack }: Props) {
     if (!addState.suggestions || addState.selectedIds.length === 0) return;
     setError('');
     try {
-      const card = await listsApi.addWord(list.id, USER_ID, {
+      const card = await listsApi.addWord(list.id, {
         wordId: addState.suggestions.wordId,
         lemma: addState.suggestions.lemma,
       });
-      const saved = await listsApi.selectTranslations(list.id, card.id, USER_ID, addState.selectedIds);
+      const saved = await listsApi.selectTranslations(list.id, card.id, addState.selectedIds);
       setCards((prev) => [...prev, saved]);
       setAddState({ phase: 'idle', lemma: '', suggestions: null, selectedIds: [] });
     } catch (e: unknown) {
@@ -61,7 +59,7 @@ export function ListPage({ list, onBack }: Props) {
   }
 
   async function removeCard(cardId: number) {
-    await listsApi.removeCard(list.id, cardId, USER_ID);
+    await listsApi.removeCard(list.id, cardId);
     setCards((prev) => prev.filter((c) => c.id !== cardId));
   }
 

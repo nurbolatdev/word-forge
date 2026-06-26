@@ -35,13 +35,13 @@ export interface AnswerResult {
 }
 
 export const quizApi = {
-  startRound: (userId: number, cardIds: number[]) =>
-    api.post<QuizRound>(`/api/quiz/rounds?userId=${userId}`, { cardIds }),
+  startRound: (cardIds: number[]) =>
+    api.post<QuizRound>('/api/quiz/rounds', { cardIds }),
 
-  getQuestion: (roundId: number, userId: number) =>
-    api.get<QuizQuestion>(`/api/quiz/rounds/${roundId}/question?userId=${userId}`),
+  getQuestion: (roundId: number) =>
+    api.get<QuizQuestion>(`/api/quiz/rounds/${roundId}/question`),
 
-  submitAnswer: (roundId: number, userId: number, body: {
+  submitAnswer: (roundId: number, body: {
     cardId: number; chosenTranslationId: number; responseTimeMs: number;
-  }) => api.post<AnswerResult>(`/api/quiz/rounds/${roundId}/answer?userId=${userId}`, body),
+  }) => api.post<AnswerResult>(`/api/quiz/rounds/${roundId}/answer`, body),
 };

@@ -1,8 +1,21 @@
+function getToken(): string | null {
+  return localStorage.getItem('wf_token');
+}
+
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
+  const token = getToken();
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
   const res = await fetch(url, {
-    headers: { 'Content-Type': 'application/json', ...init?.headers },
+    headers: { ...headers, ...init?.headers },
     ...init,
   });
+  if (res.status === 401) {
+    localStorage.removeItem('wf_token');
+    window.location.href = '/';
+    throw new Error('Unauthorized');
+  }
   if (!res.ok) {
     const text = await res.text().catch(() => '');
     throw new Error(`${res.status} ${text}`);
