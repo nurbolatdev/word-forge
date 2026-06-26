@@ -9,6 +9,16 @@ import org.springframework.stereotype.Service;
 public class MockEnrichmentService implements EnrichmentService {
     @Override
     public EnrichmentResult enrich(String lemma, String sourceLanguage, String targetLanguage) {
-        return new EnrichmentResult("READY", List.of("Mock example for %s".formatted(lemma)));
+        return new EnrichmentResult(
+                "A2",
+                List.of(
+                        new EnrichmentResult.ExampleData(
+                                "I use the word %s every day.".formatted(lemma),
+                                "Я использую слово «%s» каждый день.".formatted(lemma)),
+                        new EnrichmentResult.ExampleData(
+                                "Can you explain what %s means?".formatted(lemma),
+                                "Можешь объяснить, что значит «%s»?".formatted(lemma))
+                )
+        );
     }
 }

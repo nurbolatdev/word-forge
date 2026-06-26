@@ -568,3 +568,82 @@ h1 {
   font-size: 1.8rem;
   margin: 0;
 }
+
+/* Stage 5 — Enrichment */
+
+.card-row {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.card-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.card-main .card-lemma { flex: 1; }
+
+.enrich-btn {
+  font-size: 0.8rem;
+  padding: 4px 10px;
+  color: var(--accent);
+  border-color: var(--accent-soft);
+}
+
+.enrichment-panel {
+  margin-top: 10px;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+
+.enrichment-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.cefr-badge {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: var(--joy-soft);
+  color: var(--joy);
+  border-radius: 6px;
+  padding: 2px 8px;
+  letter-spacing: 0.05em;
+}
+
+.enrich-close {
+  margin-left: auto;
+  font-size: 0.8rem;
+  padding: 2px 8px;
+}
+
+.example-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.example-item {
+  background: var(--surface-2);
+  border-radius: 10px;
+  padding: 8px 12px;
+}
+
+.example-text {
+  margin: 0 0 2px;
+  font-size: 0.9rem;
+  color: var(--ink);
+}
+
+.example-translation {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+}
