@@ -8,4 +8,5 @@ public interface WordTranslationRepository extends JpaRepository<WordTranslation
     List<WordTranslation> findByWordIdAndTargetLang(Long wordId, String targetLang);
     Optional<WordTranslation> findByWordIdAndTargetLangAndTextAndProvider(
             Long wordId, String targetLang, String text, String provider);
+    List<WordTranslation> findByTargetLang(String targetLang);
 }

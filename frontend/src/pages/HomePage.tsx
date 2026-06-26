@@ -5,9 +5,10 @@ const USER_ID = 1;
 
 interface Props {
   onSelectList: (list: WordList) => void;
+  onStartQuiz: () => void;
 }
 
-export function HomePage({ onSelectList }: Props) {
+export function HomePage({ onSelectList, onStartQuiz }: Props) {
   const [lists, setLists] = useState<WordList[]>([]);
   const [creating, setCreating] = useState(false);
   const [title, setTitle] = useState('');
@@ -43,6 +44,7 @@ export function HomePage({ onSelectList }: Props) {
     <div className="page">
       <header className="page-header">
         <h1>My Lists</h1>
+        <button className="btn-accent" onClick={onStartQuiz}>Practice ▶</button>
         <button className="btn-primary" onClick={() => setCreating(true)}>+ New list</button>
       </header>
 
