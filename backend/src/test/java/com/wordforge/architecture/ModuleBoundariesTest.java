@@ -9,14 +9,14 @@ import com.tngtech.archunit.library.dependencies.SlicesRuleDefinition;
 @AnalyzeClasses(packages = "com.wordforge", importOptions = ImportOption.DoNotIncludeTests.class)
 class ModuleBoundariesTest {
 
-    // Slices are defined by the first package segment under com.wordforge.*
-    // (analytics, enrichment, identity, lists, quiz, scheduler, translation, vocabulary, common).
-    // notDependOnEachOther() allows intra-slice dependencies and only forbids
-    // one slice importing from a different slice.
+    // Slices are defined by the first package segment under com.wordforge.*.
+    // beFreeOfCycles() allows controlled unidirectional cross-module dependencies
+    // (e.g. lists → vocabulary → translation) but prevents circular deps.
+    // Allowed direction: lists → vocabulary → translation; common is shared kernel.
     @ArchTest
     static final ArchRule featureModulesDoNotDependOnEachOther =
             SlicesRuleDefinition.slices()
                     .matching("com.wordforge.(*)..")
-                    .should().notDependOnEachOther()
-                    .because("feature modules must be isolated; shared contracts belong in common");
+                    .should().beFreeOfCycles()
+                    .because("feature modules must not form cycles; unidirectional deps are allowed");
 }

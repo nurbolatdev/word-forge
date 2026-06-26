@@ -23,6 +23,10 @@ public class UserCard {
     @Column(nullable = false)
     private Long wordId;
 
+    // Denormalized for display without cross-module JOIN (see V3 migration)
+    @Column(nullable = false)
+    private String lemma = "";
+
     @Column(name = "chosen_translation_ids", columnDefinition = "bigint[]")
     @JdbcTypeCode(SqlTypes.ARRAY)
     private Long[] chosenTranslationIds = new Long[0];
@@ -38,16 +42,18 @@ public class UserCard {
 
     protected UserCard() {}
 
-    public UserCard(Long userId, Long listId, Long wordId) {
+    public UserCard(Long userId, Long listId, Long wordId, String lemma) {
         this.userId = userId;
         this.listId = listId;
         this.wordId = wordId;
+        this.lemma = lemma;
     }
 
     public Long getId() { return id; }
     public Long getUserId() { return userId; }
     public Long getListId() { return listId; }
     public Long getWordId() { return wordId; }
+    public String getLemma() { return lemma; }
     public Long[] getChosenTranslationIds() { return chosenTranslationIds; }
     public void setChosenTranslationIds(Long[] chosenTranslationIds) { this.chosenTranslationIds = chosenTranslationIds; }
     public double getEmotionalSalience() { return emotionalSalience; }
