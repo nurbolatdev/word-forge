@@ -5,6 +5,9 @@ services:
       dockerfile: backend/Dockerfile
     environment:
       SPRING_PROFILES_ACTIVE: dev
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/wordforge
+      SPRING_DATASOURCE_USERNAME: wordforge
+      SPRING_DATASOURCE_PASSWORD: wordforge
     ports:
       - "8080:8080"
     depends_on:
