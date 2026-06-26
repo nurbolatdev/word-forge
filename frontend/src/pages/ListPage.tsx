@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Card, listsApi, WordList } from '../api/lists';
 import { TranslateSuggestions, vocabularyApi } from '../api/vocabulary';
 import { AudioButton } from '../components/AudioButton';
+import { EnrichmentPanel } from '../components/EnrichmentPanel';
 import { TranslationPicker } from '../components/TranslationPicker';
 
 const USER_ID = 1;
@@ -131,10 +132,20 @@ export function ListPage({ list, onBack }: Props) {
       <ul className="card-list">
         {cards.map((card) => (
           <li key={card.id} className="card-row">
-            <span className="card-lemma">{card.lemma}</span>
-            <AudioButton text={card.lemma} lang={list.sourceLang} />
-            <span className="card-status">{card.status}</span>
-            <button className="btn-ghost card-remove" onClick={() => removeCard(card.id)}>✕</button>
+            <div className="card-main">
+              <span className="card-lemma">{card.lemma}</span>
+              <AudioButton text={card.lemma} lang={list.sourceLang} />
+              <span className="card-status">{card.status}</span>
+              {card.wordId > 0 && (
+                <EnrichmentPanel
+                  wordId={card.wordId}
+                  lemma={card.lemma}
+                  sourceLang={list.sourceLang}
+                  targetLang={list.targetLang}
+                />
+              )}
+              <button className="btn-ghost card-remove" onClick={() => removeCard(card.id)}>✕</button>
+            </div>
           </li>
         ))}
       </ul>

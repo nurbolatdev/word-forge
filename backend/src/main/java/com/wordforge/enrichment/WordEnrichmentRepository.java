@@ -6,4 +6,5 @@ import java.util.Optional;
 public interface WordEnrichmentRepository extends JpaRepository<WordEnrichment, Long> {
     Optional<WordEnrichment> findByWordIdAndTargetLangAndCefrLevel(
             Long wordId, String targetLang, String cefrLevel);
+    Optional<WordEnrichment> findByWordIdAndTargetLang(Long wordId, String targetLang);
 }
