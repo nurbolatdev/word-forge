@@ -2,7 +2,7 @@ package com.wordforge.scheduler;
 
 import java.time.OffsetDateTime;
 
-record GradeResultDto(
+public record GradeResultDto(
         Long cardId,
         int grade,
         boolean correct,

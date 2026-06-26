@@ -8,7 +8,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 @Service
-class SchedulerService {
+public class SchedulerService {
 
     private final CardMemoryStateRepository stateRepo;
     private final FsrsAlgorithm fsrs;
@@ -32,7 +32,7 @@ class SchedulerService {
     }
 
     @Transactional
-    GradeResultDto grade(Long cardId, Long userId, boolean correct, long responseTimeMs) {
+    public GradeResultDto grade(Long cardId, Long userId, boolean correct, long responseTimeMs) {
         int g = grading.grade(correct, responseTimeMs);
 
         CardMemoryState state = stateRepo

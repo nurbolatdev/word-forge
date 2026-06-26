@@ -31,15 +31,18 @@ public class Review {
     @Column(name = "is_benchmark", nullable = false)
     private boolean benchmark = false;
 
+    private Long roundId;
+
     @Column(nullable = false, updatable = false)
     private OffsetDateTime reviewedAt = OffsetDateTime.now();
 
     protected Review() {}
 
-    public Review(Long cardId, Long userId, String taskType, String modality,
+    public Review(Long cardId, Long userId, Long roundId, String taskType, String modality,
                   Short grade, Boolean correct, Integer responseTimeMs, boolean benchmark) {
         this.cardId = cardId;
         this.userId = userId;
+        this.roundId = roundId;
         this.taskType = taskType;
         this.modality = modality;
         this.grade = grade;
@@ -51,6 +54,7 @@ public class Review {
     public Long getId() { return id; }
     public Long getCardId() { return cardId; }
     public Long getUserId() { return userId; }
+    public Long getRoundId() { return roundId; }
     public String getTaskType() { return taskType; }
     public String getModality() { return modality; }
     public Short getGrade() { return grade; }
