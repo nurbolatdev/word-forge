@@ -14,6 +14,11 @@ spring:
   flyway:
     enabled: true
 
+wordforge:
+  jwt:
+    secret: "${JWT_SECRET:dev-only-change-in-production-use-env-var}"
+    expiry-days: 30
+
 management:
   endpoints:
     web:

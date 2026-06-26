@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react';
 import { listsApi, WordList } from '../api/lists';
 
-const USER_ID = 1;
-
 interface Props {
   onSelectList: (list: WordList) => void;
   onStartQuiz: () => void;
@@ -15,14 +13,14 @@ export function HomePage({ onSelectList, onStartQuiz }: Props) {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    listsApi.getAll(USER_ID).then(setLists).catch(console.error);
+    listsApi.getAll().then(setLists).catch(console.error);
   }, []);
 
   async function createList() {
     if (!title.trim()) return;
     setError('');
     try {
-      const list = await listsApi.create(USER_ID, {
+      const list = await listsApi.create({
         title: title.trim(),
         sourceLang: 'EN',
         targetLang: 'RU',
@@ -36,7 +34,7 @@ export function HomePage({ onSelectList, onStartQuiz }: Props) {
   }
 
   async function deleteList(id: number) {
-    await listsApi.delete(id, USER_ID);
+    await listsApi.delete(id);
     setLists((prev) => prev.filter((l) => l.id !== id));
   }
 

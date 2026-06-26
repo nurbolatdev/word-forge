@@ -20,13 +20,13 @@ class SchedulerController {
 
     @GetMapping("/due")
     List<DueCardDto> getDue(
-            @RequestParam Long userId,
+            @RequestAttribute Long userId,
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) int limit) {
         return service.getDue(userId, limit);
     }
 
     @PostMapping("/grade")
-    GradeResultDto grade(@RequestParam Long userId,
+    GradeResultDto grade(@RequestAttribute Long userId,
                          @Valid @RequestBody GradeRequest req) {
         return service.grade(req.cardId(), userId, req.correct(), req.responseTimeMs());
     }

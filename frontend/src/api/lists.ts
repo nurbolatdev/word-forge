@@ -22,24 +22,24 @@ export interface Card {
 }
 
 export const listsApi = {
-  getAll: (userId: number) =>
-    api.get<WordList[]>(`/api/lists?userId=${userId}`),
+  getAll: () =>
+    api.get<WordList[]>('/api/lists'),
 
-  create: (userId: number, body: { title: string; sourceLang: string; targetLang: string }) =>
-    api.post<WordList>(`/api/lists?userId=${userId}`, body),
+  create: (body: { title: string; sourceLang: string; targetLang: string }) =>
+    api.post<WordList>('/api/lists', body),
 
-  delete: (listId: number, userId: number) =>
-    api.delete(`/api/lists/${listId}?userId=${userId}`),
+  delete: (listId: number) =>
+    api.delete(`/api/lists/${listId}`),
 
-  getCards: (listId: number, userId: number) =>
-    api.get<Card[]>(`/api/lists/${listId}/cards?userId=${userId}`),
+  getCards: (listId: number) =>
+    api.get<Card[]>(`/api/lists/${listId}/cards`),
 
-  addWord: (listId: number, userId: number, body: { wordId: number; lemma: string }) =>
-    api.post<Card>(`/api/lists/${listId}/cards?userId=${userId}`, body),
+  addWord: (listId: number, body: { wordId: number; lemma: string }) =>
+    api.post<Card>(`/api/lists/${listId}/cards`, body),
 
-  selectTranslations: (listId: number, cardId: number, userId: number, translationIds: number[]) =>
-    api.patch<Card>(`/api/lists/${listId}/cards/${cardId}/translations?userId=${userId}`, { translationIds }),
+  selectTranslations: (listId: number, cardId: number, translationIds: number[]) =>
+    api.patch<Card>(`/api/lists/${listId}/cards/${cardId}/translations`, { translationIds }),
 
-  removeCard: (listId: number, cardId: number, userId: number) =>
-    api.delete(`/api/lists/${listId}/cards/${cardId}?userId=${userId}`),
+  removeCard: (listId: number, cardId: number) =>
+    api.delete(`/api/lists/${listId}/cards/${cardId}`),
 };

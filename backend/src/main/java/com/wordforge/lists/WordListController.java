@@ -19,19 +19,19 @@ class WordListController {
     }
 
     @GetMapping
-    List<WordListDto> getAll(@RequestParam Long userId) {
+    List<WordListDto> getAll(@RequestAttribute Long userId) {
         return service.getAll(userId);
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    WordListDto create(@RequestParam Long userId, @Valid @RequestBody CreateListRequest req) {
+    WordListDto create(@RequestAttribute Long userId, @Valid @RequestBody CreateListRequest req) {
         return service.create(userId, req);
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    void delete(@PathVariable Long id, @RequestParam Long userId) {
+    void delete(@PathVariable Long id, @RequestAttribute Long userId) {
         service.delete(id, userId);
     }
 
