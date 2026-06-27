@@ -17,6 +17,7 @@
   --accent-soft: #e7efe9;
   --joy: #e0a458;
   --joy-soft: #f7ecd9;
+  --muted: #8c8578;
 }
 
 body {
@@ -965,6 +966,42 @@ h1 {
 .mode-card-icon { font-size: 2rem; }
 .mode-card-name { font-weight: 600; font-size: 1rem; color: var(--ink); }
 .mode-card-desc { font-size: 0.78rem; color: var(--muted); line-height: 1.4; }
+.mode-card-note { font-size: 0.7rem; color: var(--accent); font-style: italic; }
+
+/* ── Direction toggle ─────────────────────────────── */
+.direction-toggle {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  background: var(--surface-2);
+  border-radius: 10px;
+  padding: 4px;
+}
+
+.direction-btn {
+  flex: 1;
+  padding: 8px 20px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.direction-btn--active {
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 700;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+.direction-badge {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
 
 .modality-badge {
   font-size: 0.78rem;

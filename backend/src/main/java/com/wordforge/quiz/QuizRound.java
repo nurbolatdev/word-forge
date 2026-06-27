@@ -28,12 +28,16 @@ public class QuizRound {
     @Column(nullable = false)
     private String modality = "MCQ";
 
+    @Column(nullable = false)
+    private String direction = "EN_RU";
+
     protected QuizRound() {}
 
-    public QuizRound(Long userId, Long[] cardIds, String modality) {
+    public QuizRound(Long userId, Long[] cardIds, String modality, String direction) {
         this.userId = userId;
         this.cardIds = cardIds;
         this.modality = modality;
+        this.direction = direction;
     }
 
     public Long getId() { return id; }
@@ -44,4 +48,5 @@ public class QuizRound {
     public OffsetDateTime getFinishedAt() { return finishedAt; }
     public void setFinishedAt(OffsetDateTime finishedAt) { this.finishedAt = finishedAt; }
     public String getModality() { return modality; }
+    public String getDirection() { return direction; }
 }

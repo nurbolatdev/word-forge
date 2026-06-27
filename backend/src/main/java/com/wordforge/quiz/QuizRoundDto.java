@@ -12,6 +12,7 @@ record QuizRoundDto(
         int answeredCards,
         boolean finished,
         String modality,
+        String direction,
         OffsetDateTime startedAt,
         OffsetDateTime finishedAt
 ) {
@@ -23,6 +24,7 @@ record QuizRoundDto(
                 answeredCards,
                 round.getFinishedAt() != null,
                 round.getModality(),
+                round.getDirection(),
                 round.getStartedAt(), round.getFinishedAt()
         );
     }

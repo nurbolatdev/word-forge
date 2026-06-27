@@ -1,0 +1,1 @@
+ALTER TABLE quiz_rounds ADD COLUMN direction TEXT NOT NULL DEFAULT 'EN_RU';

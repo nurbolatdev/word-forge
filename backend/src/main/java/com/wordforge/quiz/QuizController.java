@@ -22,7 +22,8 @@ class QuizController {
     QuizRoundDto startRound(@RequestAttribute Long userId,
                             @Valid @RequestBody StartRoundRequest req) {
         String modality = req.modality() != null ? req.modality() : "MCQ";
-        return service.startRound(userId, req.cardIds(), modality);
+        String direction = req.direction() != null ? req.direction() : "EN_RU";
+        return service.startRound(userId, req.cardIds(), modality, direction);
     }
 
     @GetMapping("/{roundId}/question")
@@ -40,7 +41,8 @@ class QuizController {
 
     record StartRoundRequest(
             @NotEmpty List<Long> cardIds,
-            String modality
+            String modality,
+            String direction
     ) {}
 
     record AnswerRequest(

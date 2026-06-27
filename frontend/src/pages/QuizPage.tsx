@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { listsApi } from '../api/lists';
-import { AnswerResult, QuizModality, QuizQuestion, quizApi } from '../api/quiz';
+import { AnswerResult, QuizDirection, QuizModality, QuizQuestion, quizApi } from '../api/quiz';
 import { AudioButton } from '../components/AudioButton';
 
 interface Props {
@@ -12,6 +12,7 @@ type Phase = 'mode-select' | 'loading' | 'empty' | 'question' | 'result' | 'done
 export function QuizPage({ onBack }: Props) {
   const [phase, setPhase] = useState<Phase>('mode-select');
   const [modality, setModality] = useState<QuizModality>('MCQ');
+  const [direction, setDirection] = useState<QuizDirection>('EN_RU');
   const [question, setQuestion] = useState<QuizQuestion | null>(null);
   const [result, setResult] = useState<AnswerResult | null>(null);
   const [roundId, setRoundId] = useState<number | null>(null);
@@ -21,12 +22,12 @@ export function QuizPage({ onBack }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (phase === 'question' && question?.modality === 'TYPING') {
+    if (phase === 'question' && (question?.modality === 'TYPING' || question?.modality === 'CLOZE')) {
       inputRef.current?.focus();
     }
   }, [phase, question]);
 
-  async function loadRound(selectedModality: QuizModality) {
+  async function loadRound(selectedModality: QuizModality, selectedDirection: QuizDirection) {
     setPhase('loading');
     setError('');
     try {
@@ -38,7 +39,7 @@ export function QuizPage({ onBack }: Props) {
       if (allCards.length === 0) { setPhase('empty'); return; }
 
       const cardIds = allCards.map((c) => c.id);
-      const round = await quizApi.startRound(cardIds, selectedModality);
+      const round = await quizApi.startRound(cardIds, selectedModality, selectedDirection);
       setRoundId(round.id);
       const q = await quizApi.getQuestion(round.id);
       setQuestion(q);
@@ -95,6 +96,9 @@ export function QuizPage({ onBack }: Props) {
     }
   }
 
+  const promptLang = question?.direction === 'RU_EN' ? 'RU' : 'EN';
+  const answerLabel = question?.direction === 'RU_EN' ? 'English word…' : 'Translation…';
+
   /* ── Mode select screen ── */
   if (phase === 'mode-select') {
     return (
@@ -104,21 +108,43 @@ export function QuizPage({ onBack }: Props) {
         </header>
         <div className="quiz-center">
           <h2 className="mode-select-title">Choose practice mode</h2>
+
+          {/* Direction toggle */}
+          <div className="direction-toggle">
+            <button
+              className={`direction-btn ${direction === 'EN_RU' ? 'direction-btn--active' : ''}`}
+              onClick={() => setDirection('EN_RU')}
+            >
+              🇬🇧 EN → RU
+            </button>
+            <button
+              className={`direction-btn ${direction === 'RU_EN' ? 'direction-btn--active' : ''}`}
+              onClick={() => setDirection('RU_EN')}
+            >
+              🇷🇺 RU → EN
+            </button>
+          </div>
+
           <div className="mode-cards">
-            <button className="mode-card" onClick={() => { setModality('MCQ'); loadRound('MCQ'); }}>
+            <button className="mode-card" onClick={() => { setModality('MCQ'); loadRound('MCQ', direction); }}>
               <span className="mode-card-icon">☑</span>
               <span className="mode-card-name">Multiple choice</span>
-              <span className="mode-card-desc">Pick the correct translation from 4 options</span>
+              <span className="mode-card-desc">Pick the correct answer from 4 options</span>
             </button>
-            <button className="mode-card" onClick={() => { setModality('TYPING'); loadRound('TYPING'); }}>
+            <button className="mode-card" onClick={() => { setModality('TYPING'); loadRound('TYPING', direction); }}>
               <span className="mode-card-icon">⌨</span>
               <span className="mode-card-name">Typing</span>
-              <span className="mode-card-desc">Type the translation from memory</span>
+              <span className="mode-card-desc">Type the answer from memory</span>
             </button>
-            <button className="mode-card" onClick={() => { setModality('CLOZE'); loadRound('CLOZE'); }}>
+            <button
+              className="mode-card"
+              onClick={() => { setModality('CLOZE'); loadRound('CLOZE', direction); }}
+              title="Cloze is always EN→RU"
+            >
               <span className="mode-card-icon">📝</span>
               <span className="mode-card-name">Cloze</span>
               <span className="mode-card-desc">Fill in the missing word in a sentence</span>
+              <span className="mode-card-note">Always EN→RU</span>
             </button>
           </div>
         </div>
@@ -138,6 +164,9 @@ export function QuizPage({ onBack }: Props) {
         <span className="modality-badge">
           {modality === 'TYPING' ? '⌨ Typing' : modality === 'CLOZE' ? '📝 Cloze' : '☑ MCQ'}
         </span>
+        <span className="direction-badge">
+          {question?.direction === 'RU_EN' ? '🇷🇺→🇬🇧' : '🇬🇧→🇷🇺'}
+        </span>
       </header>
 
       {phase === 'loading' && <div className="quiz-center"><span className="spinner">…</span></div>}
@@ -153,20 +182,22 @@ export function QuizPage({ onBack }: Props) {
       {(phase === 'question' || phase === 'result') && question && (
         <div className="quiz-card">
           <div className={`quiz-drum ${phase === 'question' ? 'quiz-drum--enter' : ''}`}>
-            <span className="quiz-lemma">{question.lemma}</span>
-            <AudioButton text={question.lemma} lang="EN" />
+            <span className="quiz-lemma">{question.promptText}</span>
+            <AudioButton text={question.promptText} lang={promptLang} />
           </div>
 
           {/* MCQ mode */}
           {question.modality === 'MCQ' && (
             <>
-              <p className="quiz-prompt">Choose the correct translation:</p>
+              <p className="quiz-prompt">
+                {question.direction === 'RU_EN' ? 'Choose the English word:' : 'Choose the correct translation:'}
+              </p>
               <div className="quiz-options">
                 {question.options.map((opt) => {
                   let cls = 'quiz-option';
                   if (phase === 'result' && result) {
                     if (opt.translationId === result.correctTranslationId) cls += ' quiz-option--correct';
-                    else if (!result.correct && opt.translationId === result.correctTranslationId) cls += ' quiz-option--wrong';
+                    else if (!result.correct && opt.translationId !== result.correctTranslationId) cls += ' quiz-option--wrong';
                   }
                   return (
                     <button
@@ -227,7 +258,9 @@ export function QuizPage({ onBack }: Props) {
           {/* Typing mode */}
           {question.modality === 'TYPING' && (
             <>
-              <p className="quiz-prompt">Type the translation:</p>
+              <p className="quiz-prompt">
+                {question.direction === 'RU_EN' ? 'Type the English word:' : 'Type the translation:'}
+              </p>
               <div className="typing-answer-row">
                 <input
                   ref={inputRef}
@@ -236,7 +269,7 @@ export function QuizPage({ onBack }: Props) {
                   onChange={e => setTypedAnswer(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && phase === 'question' && answerTyping()}
                   disabled={phase === 'result'}
-                  placeholder="Your translation…"
+                  placeholder={answerLabel}
                   autoComplete="off"
                 />
                 {phase === 'question' && (

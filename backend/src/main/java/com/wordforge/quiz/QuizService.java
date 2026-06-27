@@ -50,13 +50,14 @@ class QuizService {
     }
 
     @Transactional
-    QuizRoundDto startRound(Long userId, List<Long> cardIds, String modality) {
+    QuizRoundDto startRound(Long userId, List<Long> cardIds, String modality, String direction) {
         roundRepo.findFirstByUserIdAndFinishedAtIsNullOrderByStartedAtDesc(userId)
                 .ifPresent(r -> {
                     r.setFinishedAt(OffsetDateTime.now());
                     roundRepo.save(r);
                 });
-        QuizRound round = roundRepo.save(new QuizRound(userId, cardIds.toArray(Long[]::new), modality));
+        String dir = direction != null ? direction : "EN_RU";
+        QuizRound round = roundRepo.save(new QuizRound(userId, cardIds.toArray(Long[]::new), modality, dir));
         return QuizRoundDto.from(round, 0);
     }
 
@@ -67,7 +68,7 @@ class QuizService {
         if (index >= cardIds.length) {
             throw new ResponseStatusException(HttpStatus.GONE, "Round is complete");
         }
-        return buildQuestion(cardIds[index], index, cardIds.length, round.getModality());
+        return buildQuestion(cardIds[index], index, cardIds.length, round.getModality(), round.getDirection(), cardIds);
     }
 
     @Transactional
@@ -84,19 +85,30 @@ class QuizService {
         boolean correct;
         String taskType;
         String modality = round.getModality();
+        String direction = round.getDirection();
+        boolean isRuEn = "RU_EN".equals(direction);
 
         if ("CLOZE".equals(modality)) {
+            // CLOZE is always EN_RU: type the English lemma
             taskType = "CLOZE";
             String typed = typedAnswer == null ? "" : typedAnswer.strip().toLowerCase();
             correct = card.getLemma().strip().toLowerCase().equals(typed);
         } else if ("TYPING".equals(modality)) {
             taskType = "TYPING";
             String typed = typedAnswer == null ? "" : typedAnswer.strip().toLowerCase();
-            correct = Arrays.stream(card.getChosenTranslationIds())
-                    .map(id -> translationRepo.findById(id)
-                            .map(t -> t.getText().strip().toLowerCase()).orElse(""))
-                    .anyMatch(t -> t.equals(typed));
+            if (isRuEn) {
+                // RU_EN: show Russian translation, user types English lemma
+                correct = card.getLemma().strip().toLowerCase().equals(typed);
+            } else {
+                // EN_RU: show English lemma, user types Russian translation
+                correct = Arrays.stream(card.getChosenTranslationIds())
+                        .map(id -> translationRepo.findById(id)
+                                .map(t -> t.getText().strip().toLowerCase()).orElse(""))
+                        .anyMatch(t -> t.equals(typed));
+            }
         } else {
+            // MCQ: grading is the same regardless of direction — submitted translationId
+            // must be in the correct card's chosenTranslationIds
             taskType = "CHOICE_4";
             correct = Arrays.asList(card.getChosenTranslationIds()).contains(chosenTranslationId);
         }
@@ -105,9 +117,16 @@ class QuizService {
 
         Long correctTranslationId = card.getChosenTranslationIds().length > 0
                 ? card.getChosenTranslationIds()[0] : chosenTranslationId;
-        String correctText = "CLOZE".equals(modality)
-                ? card.getLemma()
-                : translationRepo.findById(correctTranslationId).map(WordTranslation::getText).orElse("");
+
+        String correctText;
+        if ("CLOZE".equals(modality)) {
+            correctText = card.getLemma();
+        } else if (isRuEn && "TYPING".equals(modality)) {
+            correctText = card.getLemma();
+        } else {
+            correctText = translationRepo.findById(correctTranslationId)
+                    .map(WordTranslation::getText).orElse("");
+        }
 
         reviewRepo.save(new Review(cardId, userId, roundId, taskType, "TEXT",
                 (short) gradeResult.grade(), correct, (int) responseTimeMs, false));
@@ -122,16 +141,14 @@ class QuizService {
         }
 
         QuizQuestionDto next = finished ? null
-                : buildQuestion(cardIds[answered], answered, cardIds.length, modality);
+                : buildQuestion(cardIds[answered], answered, cardIds.length, modality, direction, cardIds);
         return new AnswerResultDto(cardId, correct, gradeResult.grade(),
                 correctTranslationId, correctText, finished, next);
     }
 
-    private QuizQuestionDto buildQuestion(Long cardId, int index, int total, String modality) {
+    private QuizQuestionDto buildQuestion(Long cardId, int index, int total,
+                                          String modality, String direction, Long[] roundCardIds) {
         UserCard card = cardRepo.findById(cardId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-
-        WordList list = listRepo.findById(card.getListId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
         Long correctTranslationId = card.getChosenTranslationIds().length > 0
@@ -141,31 +158,67 @@ class QuizService {
                     "Card has no chosen translations");
         }
 
+        boolean isRuEn = "RU_EN".equals(direction);
+
+        // CLOZE is always EN_RU regardless of direction setting
         if ("CLOZE".equals(modality)) {
             String clozeText = buildClozeText(card);
-            return new QuizQuestionDto(cardId, card.getLemma(), index, total, modality, clozeText, List.of());
+            String prompt = card.getLemma();
+            return new QuizQuestionDto(cardId, card.getLemma(), prompt, "EN_RU",
+                    index, total, modality, clozeText, List.of());
         }
 
-        WordTranslation correct = translationRepo.findById(correctTranslationId)
+        WordTranslation correctTranslation = translationRepo.findById(correctTranslationId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
-        String cefrLevel = enrichmentRepo.findFirstByWordId(card.getWordId())
-                .map(e -> e.getCefrLevel()).orElse("B1");
-        List<WordTranslation> pool = translationRepo.findSmartDistractors(
-                list.getTargetLang(), card.getWordId(), cefrLevel);
-        List<WordTranslation> distractors = pool.stream().limit(3).toList();
+        // promptText: what the user sees as the question
+        String promptText = isRuEn ? correctTranslation.getText() : card.getLemma();
 
-        List<QuizQuestionDto.OptionDto> options;
         if ("TYPING".equals(modality)) {
-            options = List.of();
-        } else {
-            options = new ArrayList<>();
-            options.add(new QuizQuestionDto.OptionDto(correct.getId(), correct.getText()));
-            distractors.forEach(d -> options.add(new QuizQuestionDto.OptionDto(d.getId(), d.getText())));
-            Collections.shuffle(options);
+            return new QuizQuestionDto(cardId, card.getLemma(), promptText, direction,
+                    index, total, modality, null, List.of());
         }
 
-        return new QuizQuestionDto(cardId, card.getLemma(), index, total, modality, null, options);
+        // MCQ: build options
+        List<QuizQuestionDto.OptionDto> options = new ArrayList<>();
+
+        if (isRuEn) {
+            // RU_EN MCQ: show Russian translation, options are English lemmas
+            // Correct option: this card's lemma, identified by its translationId
+            options.add(new QuizQuestionDto.OptionDto(correctTranslationId, card.getLemma()));
+
+            // Distractors: other cards in this round (by their lemma)
+            Arrays.stream(roundCardIds)
+                    .filter(cid -> !cid.equals(cardId))
+                    .limit(3)
+                    .forEach(cid -> cardRepo.findById(cid).ifPresent(other -> {
+                        Long otherId = other.getChosenTranslationIds().length > 0
+                                ? other.getChosenTranslationIds()[0] : null;
+                        if (otherId != null) {
+                            options.add(new QuizQuestionDto.OptionDto(otherId, other.getLemma()));
+                        }
+                    }));
+        } else {
+            // EN_RU MCQ: show English lemma, options are Russian translations
+            WordList list = listRepo.findById(card.getListId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+            String cefrLevel = enrichmentRepo.findFirstByWordId(card.getWordId())
+                    .map(e -> e.getCefrLevel()).orElse("B1");
+            List<WordTranslation> pool = translationRepo.findSmartDistractors(
+                    list.getTargetLang(), card.getWordId(), cefrLevel);
+            options.add(new QuizQuestionDto.OptionDto(correctTranslation.getId(), correctTranslation.getText()));
+            pool.stream().limit(3)
+                    .forEach(d -> options.add(new QuizQuestionDto.OptionDto(d.getId(), d.getText())));
+        }
+
+        // Pad with placeholders if fewer than 4 options (rare edge case)
+        while (options.size() < 4) {
+            options.add(new QuizQuestionDto.OptionDto(-1L, "—"));
+        }
+
+        Collections.shuffle(options);
+        return new QuizQuestionDto(cardId, card.getLemma(), promptText, direction,
+                index, total, modality, null, options);
     }
 
     private String buildClozeText(UserCard card) {
@@ -178,7 +231,6 @@ class QuizService {
         String sentence = examples.get(0).getText();
         String pattern = "(?i)\\b" + Pattern.quote(card.getLemma()) + "\\b";
         String blanked = sentence.replaceAll(pattern, "___");
-        // If the lemma wasn't found literally, append a blank so the UI still makes sense
         return blanked.contains("___") ? blanked : sentence + " [___]";
     }
 
