@@ -5,6 +5,63 @@ import { AudioButton } from '../components/AudioButton';
 import { EnrichmentPanel } from '../components/EnrichmentPanel';
 import { TranslationPicker } from '../components/TranslationPicker';
 
+function FlipCard({
+  card, sourceLang, targetLang, onRemove,
+}: {
+  card: Card; sourceLang: string; targetLang: string; onRemove: (id: number) => void;
+}) {
+  const [flipped, setFlipped] = useState(false);
+  return (
+    <li className="flip-card-wrapper">
+      <div
+        className={`flip-card${flipped ? ' flip-card--flipped' : ''}`}
+        onClick={() => setFlipped((f) => !f)}
+      >
+        {/* Front */}
+        <div className="flip-card-face flip-card-front">
+          <div className="card-main">
+            <span className="card-lemma">{card.lemma}</span>
+            <AudioButton text={card.lemma} lang={sourceLang} />
+            <span className="card-status">{card.status}</span>
+            {card.wordId > 0 && (
+              <EnrichmentPanel
+                wordId={card.wordId}
+                lemma={card.lemma}
+                sourceLang={sourceLang}
+                targetLang={targetLang}
+              />
+            )}
+            <button
+              className="btn-ghost card-remove"
+              onClick={(e) => { e.stopPropagation(); onRemove(card.id); }}
+            >✕</button>
+          </div>
+        </div>
+
+        {/* Back */}
+        <div className="flip-card-face flip-card-back">
+          <div className="flip-back-content">
+            <span className="flip-hint-label">{sourceLang} → {targetLang}</span>
+            {card.translations.length > 0 ? (
+              <ul className="flip-translations">
+                {card.translations.map((t, i) => (
+                  <li key={i} className="flip-translation-item">
+                    <AudioButton text={t} lang={targetLang} />
+                    <span>{t}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="flip-no-translation">No translation selected yet</p>
+            )}
+            <span className="flip-tap-hint">Tap to flip back</span>
+          </div>
+        </div>
+      </div>
+    </li>
+  );
+}
+
 interface Props {
   list: WordList;
   onBack: () => void;
@@ -160,22 +217,13 @@ export function ListPage({ list, onBack }: Props) {
 
       <ul className="card-list">
         {cards.map((card) => (
-          <li key={card.id} className="card-row">
-            <div className="card-main">
-              <span className="card-lemma">{card.lemma}</span>
-              <AudioButton text={card.lemma} lang={list.sourceLang} />
-              <span className="card-status">{card.status}</span>
-              {card.wordId > 0 && (
-                <EnrichmentPanel
-                  wordId={card.wordId}
-                  lemma={card.lemma}
-                  sourceLang={list.sourceLang}
-                  targetLang={list.targetLang}
-                />
-              )}
-              <button className="btn-ghost card-remove" onClick={() => removeCard(card.id)}>✕</button>
-            </div>
-          </li>
+          <FlipCard
+            key={card.id}
+            card={card}
+            sourceLang={list.sourceLang}
+            targetLang={list.targetLang}
+            onRemove={removeCard}
+          />
         ))}
       </ul>
     </div>

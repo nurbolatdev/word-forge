@@ -17,6 +17,7 @@ export interface Card {
   wordId: number;
   lemma: string;
   chosenTranslationIds: number[];
+  translations: string[];
   status: string;
   createdAt: string;
 }

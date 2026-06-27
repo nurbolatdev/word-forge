@@ -11,10 +11,11 @@ record CardDto(
         Long wordId,
         String lemma,
         List<Long> chosenTranslationIds,
+        List<String> translations,
         String status,
         OffsetDateTime createdAt
 ) {
-    static CardDto from(UserCard card) {
+    static CardDto from(UserCard card, List<String> translationTexts) {
         return new CardDto(
                 card.getId(),
                 card.getListId(),
@@ -24,6 +25,7 @@ record CardDto(
                 card.getChosenTranslationIds() == null
                         ? List.of()
                         : Arrays.asList(card.getChosenTranslationIds()),
+                translationTexts,
                 card.getStatus(),
                 card.getCreatedAt()
         );
