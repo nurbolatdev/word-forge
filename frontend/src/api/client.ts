@@ -31,4 +31,15 @@ export const api = {
   patch: <T>(url: string, body: unknown) =>
     request<T>(url, { method: 'PATCH', body: JSON.stringify(body) }),
   delete: (url: string) => request<void>(url, { method: 'DELETE' }),
+  upload: <T>(url: string, formData: FormData): Promise<T> => {
+    const token = getToken();
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    return fetch(url, { method: 'POST', headers, body: formData })
+      .then(async res => {
+        if (res.status === 401) { localStorage.removeItem('wf_token'); window.location.href = '/'; throw new Error('Unauthorized'); }
+        if (!res.ok) { const t = await res.text().catch(() => ''); throw new Error(`${res.status} ${t}`); }
+        return res.json() as Promise<T>;
+      });
+  },
 };

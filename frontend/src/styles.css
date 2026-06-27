@@ -901,3 +901,13 @@ h1 {
   color: var(--muted);
   white-space: nowrap;
 }
+
+/* ── CSV import feedback ─────────────────────────── */
+.import-msg {
+  font-size: 0.875rem;
+  color: var(--accent);
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  background: var(--accent-soft);
+  border-radius: 6px;
+}

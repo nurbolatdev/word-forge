@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Card, listsApi, WordList } from '../api/lists';
 import { TranslateSuggestions, vocabularyApi } from '../api/vocabulary';
 import { AudioButton } from '../components/AudioButton';
@@ -23,6 +23,8 @@ export function ListPage({ list, onBack }: Props) {
     phase: 'idle', lemma: '', suggestions: null, selectedIds: [],
   });
   const [error, setError] = useState('');
+  const [importMsg, setImportMsg] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     listsApi.getCards(list.id).then(setCards).catch(console.error);
@@ -63,13 +65,42 @@ export function ListPage({ list, onBack }: Props) {
     setCards((prev) => prev.filter((c) => c.id !== cardId));
   }
 
+  async function handleCsvImport(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImportMsg('Importing…');
+    setError('');
+    try {
+      const result = await listsApi.importCsv(list.id, file);
+      setImportMsg(`Imported ${result.imported} words, skipped ${result.skipped}`);
+      const refreshed = await listsApi.getCards(list.id);
+      setCards(refreshed);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Import failed');
+      setImportMsg('');
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  }
+
   return (
     <div className="page">
       <header className="page-header">
         <button className="btn-ghost" onClick={onBack}>← Back</button>
         <h1>{list.title}</h1>
         <span className="lang-badge">{list.sourceLang} → {list.targetLang}</span>
+        <button className="btn-ghost" onClick={() => fileInputRef.current?.click()}>
+          ↑ Import CSV
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".csv,text/csv"
+          style={{ display: 'none' }}
+          onChange={handleCsvImport}
+        />
       </header>
+      {importMsg && <p className="import-msg">{importMsg}</p>}
 
       <div className="add-words-section">
         <div className="add-words-row">
