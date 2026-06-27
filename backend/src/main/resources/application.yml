@@ -18,6 +18,11 @@ wordforge:
   jwt:
     secret: "${JWT_SECRET:dev-only-change-in-production-use-env-var}"
     expiry-days: 30
+  groq:
+    # Free API key from https://console.groq.com/keys (uses LLaMA 3 — open-source by Meta)
+    # Set env var WORDFORGE_GROQ_API_KEY=gsk_... to enable real AI enrichment.
+    # Without this key, a built-in fallback generates placeholder sentences.
+    api-key: "${WORDFORGE_GROQ_API_KEY:}"
 
 management:
   endpoints:

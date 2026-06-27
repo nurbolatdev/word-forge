@@ -181,10 +181,13 @@ export function QuizPage({ onBack }: Props) {
 
       {(phase === 'question' || phase === 'result') && question && (
         <div className="quiz-card">
-          <div className={`quiz-drum ${phase === 'question' ? 'quiz-drum--enter' : ''}`}>
-            <span className="quiz-lemma">{question.promptText}</span>
-            <AudioButton text={question.promptText} lang={promptLang} />
-          </div>
+          {/* Show word prompt for MCQ and TYPING only — CLOZE hides it intentionally */}
+          {question.modality !== 'CLOZE' && (
+            <div className={`quiz-drum ${phase === 'question' ? 'quiz-drum--enter' : ''}`}>
+              <span className="quiz-lemma">{question.promptText}</span>
+              <AudioButton text={question.promptText} lang={promptLang} />
+            </div>
+          )}
 
           {/* MCQ mode */}
           {question.modality === 'MCQ' && (
@@ -240,7 +243,7 @@ export function QuizPage({ onBack }: Props) {
                   onChange={e => setTypedAnswer(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && phase === 'question' && answerTyping()}
                   disabled={phase === 'result'}
-                  placeholder="Type the word…"
+                  placeholder="Fill in the blank…"
                   autoComplete="off"
                 />
                 {phase === 'question' && (

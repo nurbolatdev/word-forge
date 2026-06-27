@@ -2,6 +2,7 @@ package com.wordforge.quiz;
 
 import com.wordforge.enrichment.WordEnrichmentRepository;
 import com.wordforge.enrichment.WordExampleRepository;
+import com.wordforge.enrichment.WordEnrichmentService;
 import com.wordforge.lists.UserCard;
 import com.wordforge.lists.UserCardRepository;
 import com.wordforge.lists.WordList;
@@ -31,6 +32,7 @@ class QuizService {
     private final WordTranslationRepository translationRepo;
     private final WordEnrichmentRepository enrichmentRepo;
     private final WordExampleRepository exampleRepo;
+    private final WordEnrichmentService enrichmentService;
     private final SchedulerService schedulerService;
 
     QuizService(QuizRoundRepository roundRepo, ReviewRepository reviewRepo,
@@ -38,6 +40,7 @@ class QuizService {
                 WordTranslationRepository translationRepo,
                 WordEnrichmentRepository enrichmentRepo,
                 WordExampleRepository exampleRepo,
+                WordEnrichmentService enrichmentService,
                 SchedulerService schedulerService) {
         this.roundRepo = roundRepo;
         this.reviewRepo = reviewRepo;
@@ -46,6 +49,7 @@ class QuizService {
         this.translationRepo = translationRepo;
         this.enrichmentRepo = enrichmentRepo;
         this.exampleRepo = exampleRepo;
+        this.enrichmentService = enrichmentService;
         this.schedulerService = schedulerService;
     }
 
@@ -89,7 +93,6 @@ class QuizService {
         boolean isRuEn = "RU_EN".equals(direction);
 
         if ("CLOZE".equals(modality)) {
-            // CLOZE is always EN_RU: type the English lemma
             taskType = "CLOZE";
             String typed = typedAnswer == null ? "" : typedAnswer.strip().toLowerCase();
             correct = card.getLemma().strip().toLowerCase().equals(typed);
@@ -97,18 +100,14 @@ class QuizService {
             taskType = "TYPING";
             String typed = typedAnswer == null ? "" : typedAnswer.strip().toLowerCase();
             if (isRuEn) {
-                // RU_EN: show Russian translation, user types English lemma
                 correct = card.getLemma().strip().toLowerCase().equals(typed);
             } else {
-                // EN_RU: show English lemma, user types Russian translation
                 correct = Arrays.stream(card.getChosenTranslationIds())
                         .map(id -> translationRepo.findById(id)
                                 .map(t -> t.getText().strip().toLowerCase()).orElse(""))
                         .anyMatch(t -> t.equals(typed));
             }
         } else {
-            // MCQ: grading is the same regardless of direction — submitted translationId
-            // must be in the correct card's chosenTranslationIds
             taskType = "CHOICE_4";
             correct = Arrays.asList(card.getChosenTranslationIds()).contains(chosenTranslationId);
         }
@@ -160,18 +159,16 @@ class QuizService {
 
         boolean isRuEn = "RU_EN".equals(direction);
 
-        // CLOZE is always EN_RU regardless of direction setting
         if ("CLOZE".equals(modality)) {
             String clozeText = buildClozeText(card);
-            String prompt = card.getLemma();
-            return new QuizQuestionDto(cardId, card.getLemma(), prompt, "EN_RU",
+            // CLOZE: promptText is empty — the sentence itself is the prompt, word is NOT shown
+            return new QuizQuestionDto(cardId, card.getLemma(), "", "EN_RU",
                     index, total, modality, clozeText, List.of());
         }
 
         WordTranslation correctTranslation = translationRepo.findById(correctTranslationId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
-        // promptText: what the user sees as the question
         String promptText = isRuEn ? correctTranslation.getText() : card.getLemma();
 
         if ("TYPING".equals(modality)) {
@@ -179,15 +176,10 @@ class QuizService {
                     index, total, modality, null, List.of());
         }
 
-        // MCQ: build options
         List<QuizQuestionDto.OptionDto> options = new ArrayList<>();
 
         if (isRuEn) {
-            // RU_EN MCQ: show Russian translation, options are English lemmas
-            // Correct option: this card's lemma, identified by its translationId
             options.add(new QuizQuestionDto.OptionDto(correctTranslationId, card.getLemma()));
-
-            // Distractors: other cards in this round (by their lemma)
             Arrays.stream(roundCardIds)
                     .filter(cid -> !cid.equals(cardId))
                     .limit(3)
@@ -199,7 +191,6 @@ class QuizService {
                         }
                     }));
         } else {
-            // EN_RU MCQ: show English lemma, options are Russian translations
             WordList list = listRepo.findById(card.getListId())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
             String cefrLevel = enrichmentRepo.findFirstByWordId(card.getWordId())
@@ -211,7 +202,6 @@ class QuizService {
                     .forEach(d -> options.add(new QuizQuestionDto.OptionDto(d.getId(), d.getText())));
         }
 
-        // Pad with placeholders if fewer than 4 options (rare edge case)
         while (options.size() < 4) {
             options.add(new QuizQuestionDto.OptionDto(-1L, "—"));
         }
@@ -222,16 +212,36 @@ class QuizService {
     }
 
     private String buildClozeText(UserCard card) {
+        // Auto-enrich if no enrichment exists yet — generates example sentences on demand
         var enrichmentOpt = enrichmentRepo.findFirstByWordId(card.getWordId());
-        if (enrichmentOpt.isEmpty()) return "Fill in: ___";
+        if (enrichmentOpt.isEmpty()) {
+            WordList list = listRepo.findById(card.getListId())
+                    .orElse(null);
+            String sourceLang = list != null ? list.getSourceLang() : "EN";
+            String targetLang = list != null ? list.getTargetLang() : "RU";
+            try {
+                enrichmentService.enrich(card.getWordId(), card.getLemma(), sourceLang, targetLang);
+                enrichmentOpt = enrichmentRepo.findFirstByWordId(card.getWordId());
+            } catch (Exception ignored) {
+                // Non-fatal: fall through to "Fill in" fallback
+            }
+        }
+
+        if (enrichmentOpt.isEmpty()) return "Fill in: " + card.getLemma() + " — ___";
 
         var examples = exampleRepo.findByEnrichmentId(enrichmentOpt.get().getId());
-        if (examples.isEmpty()) return "Fill in: ___";
+        if (examples.isEmpty()) return "Fill in: " + card.getLemma() + " — ___";
 
-        String sentence = examples.get(0).getText();
-        String pattern = "(?i)\\b" + Pattern.quote(card.getLemma()) + "\\b";
-        String blanked = sentence.replaceAll(pattern, "___");
-        return blanked.contains("___") ? blanked : sentence + " [___]";
+        // Try each example until one has the lemma we can blank out
+        for (var ex : examples) {
+            String sentence = ex.getText();
+            String blanked = sentence.replaceAll(
+                    "(?i)\\b" + Pattern.quote(card.getLemma()) + "\\b", "___");
+            if (blanked.contains("___")) return blanked;
+        }
+
+        // Lemma not literally in any sentence — append it as standalone blank
+        return examples.get(0).getText() + " [___]";
     }
 
     private QuizRound requireRound(Long roundId, Long userId) {

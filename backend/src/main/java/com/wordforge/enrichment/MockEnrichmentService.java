@@ -1,33 +1,56 @@
 package com.wordforge.enrichment;
 
-import java.util.List;
-import org.springframework.context.annotation.Profile;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+import java.util.Map;
+
+// Fallback: active when GroqEnrichmentService is NOT configured (no API key).
 @Service
-@Profile("dev")
+@ConditionalOnMissingBean(GroqEnrichmentService.class)
 public class MockEnrichmentService implements EnrichmentService {
+
+    // Varied sentence templates so every word gets different patterns
+    private static final List<String[]> TEMPLATES = List.of(
+        new String[]{"She couldn't imagine life without %s.", "Она не могла представить жизнь без «%s»."},
+        new String[]{"The teacher asked us to define %s in our own words.", "Учитель попросил нас объяснить «%s» своими словами."},
+        new String[]{"Learning the word %s helped me a lot.", "Изучение слова «%s» мне очень помогло."},
+        new String[]{"He used %s in a sentence to practise.", "Он использовал «%s» в предложении для практики."},
+        new String[]{"Without understanding %s, the text makes no sense.", "Не понимая «%s», текст лишён смысла."}
+    );
+
+    // Hardcoded CEFR by category — enough to avoid all words being "A2"
+    private static final Map<String, String> CEFR_HINTS = Map.of(
+        "a", "A1", "b", "A1", "c", "A2", "d", "A2",
+        "e", "B1", "f", "B1", "g", "B1", "h", "B2",
+        "i", "B2", "j", "B2"
+    );
+
     @Override
     public EnrichmentResult enrich(String lemma, String sourceLanguage, String targetLanguage) {
-        String mnemonic = buildMnemonic(lemma);
+        String first = lemma.isEmpty() ? "a" : String.valueOf(lemma.charAt(0)).toLowerCase();
+        String cefr = CEFR_HINTS.getOrDefault(first, "B1");
+
+        // Pick a template based on lemma hash so it's deterministic per word
+        String[] tpl = TEMPLATES.get(Math.abs(lemma.hashCode()) % TEMPLATES.size());
+        String[] tpl2 = TEMPLATES.get((Math.abs(lemma.hashCode()) + 1) % TEMPLATES.size());
+
         return new EnrichmentResult(
-                "A2",
-                mnemonic,
+                cefr,
+                buildMnemonic(lemma),
                 List.of(
                         new EnrichmentResult.ExampleData(
-                                "I use the word %s every day.".formatted(lemma),
-                                "Я использую слово «%s» каждый день.".formatted(lemma)),
+                                tpl[0].formatted(lemma), tpl[1].formatted(lemma)),
                         new EnrichmentResult.ExampleData(
-                                "Can you explain what %s means?".formatted(lemma),
-                                "Можешь объяснить, что значит «%s»?".formatted(lemma))
+                                tpl2[0].formatted(lemma), tpl2[1].formatted(lemma))
                 )
         );
     }
 
     private String buildMnemonic(String lemma) {
-        // Generates a memorable association linking the word sound to its meaning.
-        // Real impl would call an LLM; this is a deterministic placeholder.
         char first = Character.toUpperCase(lemma.charAt(0));
-        return "💡 Remember \"%s\": the word starts with '%c' — picture a vivid scene where you say it out loud three times. The more specific the image, the stronger the memory!".formatted(lemma, first);
+        return ("💡 Remember \"%s\": starts with '%c' — " +
+                "picture a vivid scene and say it aloud three times.").formatted(lemma, first);
     }
 }

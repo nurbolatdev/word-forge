@@ -8,7 +8,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 
 @Service
-class WordEnrichmentService {
+public class WordEnrichmentService {
 
     private final EnrichmentService enrichmentService;
     private final WordEnrichmentRepository enrichmentRepo;
@@ -22,7 +22,7 @@ class WordEnrichmentService {
         this.exampleRepo = exampleRepo;
     }
 
-    EnrichmentDto get(Long wordId, String targetLang) {
+    public EnrichmentDto get(Long wordId, String targetLang) {
         WordEnrichment enrichment = enrichmentRepo
                 .findByWordIdAndTargetLang(wordId, targetLang.toUpperCase())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
@@ -31,7 +31,7 @@ class WordEnrichmentService {
     }
 
     @Transactional
-    EnrichmentDto enrich(Long wordId, String lemma, String sourceLang, String targetLang) {
+    public EnrichmentDto enrich(Long wordId, String lemma, String sourceLang, String targetLang) {
         String tLang = targetLang.toUpperCase();
 
         return enrichmentRepo.findByWordIdAndTargetLang(wordId, tLang)
