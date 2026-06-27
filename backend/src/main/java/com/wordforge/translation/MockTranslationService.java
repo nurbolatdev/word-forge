@@ -2,11 +2,11 @@ package com.wordforge.translation;
 
 import java.util.List;
 import java.util.Map;
-import org.springframework.context.annotation.Profile;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.stereotype.Service;
 
 @Service
-@Profile("dev")
+@ConditionalOnMissingBean(GroqTranslationService.class)
 public class MockTranslationService implements TranslationService {
 
     private static final Map<String, String[]> EN_RU = Map.ofEntries(

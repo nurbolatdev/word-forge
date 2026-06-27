@@ -21,7 +21,9 @@ export function TranslationPicker({ options, selected, onChange }: Props) {
           <button onClick={() => toggle(opt.id)} type="button">
             {opt.text}
           </button>
-          <span className="provider-tag">{opt.provider}</span>
+          {opt.provider !== 'ai' && opt.provider !== 'preset' && (
+            <span className="provider-tag">{opt.provider}</span>
+          )}
         </li>
       ))}
     </ul>
