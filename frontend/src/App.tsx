@@ -3,9 +3,10 @@ import { WordList } from './api/lists';
 import { HomePage } from './pages/HomePage';
 import { ListPage } from './pages/ListPage';
 import { QuizPage } from './pages/QuizPage';
+import { StatsPage } from './pages/StatsPage';
 import AuthPage from './pages/AuthPage';
 
-type Screen = 'home' | 'list' | 'quiz';
+type Screen = 'home' | 'list' | 'quiz' | 'stats';
 
 export function App() {
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('wf_token'));
@@ -22,10 +23,14 @@ export function App() {
   if (screen === 'list' && currentList) {
     return <ListPage list={currentList} onBack={() => setScreen('home')} />;
   }
+  if (screen === 'stats') {
+    return <StatsPage onBack={() => setScreen('home')} />;
+  }
   return (
     <HomePage
       onSelectList={(list) => { setCurrentList(list); setScreen('list'); }}
       onStartQuiz={() => setScreen('quiz')}
+      onShowStats={() => setScreen('stats')}
     />
   );
 }
