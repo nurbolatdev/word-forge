@@ -353,52 +353,86 @@ h1 {
   perspective: 1200px;
 }
 
-/* The rotating container — children preserve-3d */
 .flip-card {
   position: relative;
   transform-style: preserve-3d;
   transition: transform 0.42s cubic-bezier(.4,0,.2,1);
   cursor: pointer;
-  border-radius: 14px;
 }
 
 .flip-card--flipped {
   transform: rotateY(180deg);
 }
 
-/* Both faces share the same border/radius */
 .flip-card-face {
   border: 1px solid var(--border);
   border-radius: 14px;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
+  overflow: hidden;
 }
 
-/* Front: stays in normal flow — defines the card height */
 .flip-card-front {
   background: var(--surface);
 }
 
-/* Back: overlaid on top of the front, pre-rotated 180deg */
 .flip-card-back {
   position: absolute;
   inset: 0;
   transform: rotateY(180deg);
-  background: var(--ink);
-  color: var(--bg);
+  background: #1c1917;
+  color: #fafaf9;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  padding: 16px 20px;
+  gap: 8px;
+  padding: 18px 24px;
+  border-color: #1c1917;
 }
 
+/* Front layout */
+.flip-front-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  gap: 12px;
+}
+
+.flip-front-word {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.flip-front-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* X button always subtly visible */
+.card-remove--visible {
+  opacity: 0.35 !important;
+  padding: 4px 8px;
+  font-size: 0.8rem;
+  transition: opacity 140ms;
+}
+
+.flip-card-wrapper:hover .card-remove--visible {
+  opacity: 0.8 !important;
+}
+
+/* Back layout */
 .flip-hint-label {
-  font-size: 0.68rem;
-  opacity: 0.45;
+  font-size: 0.65rem;
+  opacity: 0.4;
   font-family: 'IBM Plex Mono', monospace;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
@@ -408,31 +442,34 @@ h1 {
   margin: 0;
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 14px;
   justify-content: center;
+  align-items: center;
 }
 
 .flip-translation-item {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 1.2rem;
+  font-size: 1.25rem;
   font-weight: 600;
-  letter-spacing: 0.01em;
 }
 
 .flip-no-translation {
   font-size: 0.85rem;
-  opacity: 0.55;
+  opacity: 0.5;
   margin: 0;
 }
 
 .flip-tap-hint {
-  font-size: 0.62rem;
-  opacity: 0.3;
+  font-size: 0.6rem;
+  opacity: 0.25;
 }
 
-.flip-card-back .audio-btn { filter: invert(1) opacity(0.7); }
+.flip-card-back .audio-btn {
+  filter: invert(1);
+  opacity: 0.7;
+}
 
 .card-row {
   display: flex;
@@ -466,7 +503,8 @@ h1 {
   transition: opacity 140ms;
 }
 
-.card-row:hover .card-remove {
+.card-row:hover .card-remove,
+.flip-card-wrapper:hover .card-remove {
   opacity: 1;
 }
 

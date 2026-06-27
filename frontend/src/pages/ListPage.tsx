@@ -19,22 +19,30 @@ function FlipCard({
       >
         {/* Front */}
         <div className="flip-card-face flip-card-front">
-          <div className="card-main">
-            <span className="card-lemma">{card.lemma}</span>
-            <AudioButton text={card.lemma} lang={sourceLang} />
-            <span className="card-status">{card.status}</span>
-            {card.wordId > 0 && (
-              <EnrichmentPanel
-                wordId={card.wordId}
-                lemma={card.lemma}
-                sourceLang={sourceLang}
-                targetLang={targetLang}
-              />
-            )}
-            <button
-              className="btn-ghost card-remove"
-              onClick={(e) => { e.stopPropagation(); onRemove(card.id); }}
-            >✕</button>
+          <div className="flip-front-content">
+            <div className="flip-front-word">
+              <span className="card-lemma">{card.lemma}</span>
+              {/* stop propagation so audio doesn't flip the card */}
+              <span onClick={(e) => e.stopPropagation()}>
+                <AudioButton text={card.lemma} lang={sourceLang} />
+              </span>
+            </div>
+            <div className="flip-front-controls" onClick={(e) => e.stopPropagation()}>
+              <span className="card-status">{card.status}</span>
+              {card.wordId > 0 && (
+                <EnrichmentPanel
+                  wordId={card.wordId}
+                  lemma={card.lemma}
+                  sourceLang={sourceLang}
+                  targetLang={targetLang}
+                />
+              )}
+              <button
+                className="btn-ghost card-remove card-remove--visible"
+                onClick={(e) => { e.stopPropagation(); onRemove(card.id); }}
+                title="Remove word"
+              >✕</button>
+            </div>
           </div>
         </div>
 
