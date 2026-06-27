@@ -42,4 +42,11 @@ export const listsApi = {
 
   removeCard: (listId: number, cardId: number) =>
     api.delete(`/api/lists/${listId}/cards/${cardId}`),
+
+  importCsv: (listId: number, file: File) => {
+    const form = new FormData();
+    form.append('file', file);
+    return api.upload<{ imported: number; skipped: number }>(
+      `/api/lists/${listId}/cards/import`, form);
+  },
 };

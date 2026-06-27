@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -14,9 +15,11 @@ import java.util.List;
 class CardController {
 
     private final CardService service;
+    private final CsvImportService csvImportService;
 
-    CardController(CardService service) {
+    CardController(CardService service, CsvImportService csvImportService) {
         this.service = service;
+        this.csvImportService = csvImportService;
     }
 
     @GetMapping
@@ -46,6 +49,13 @@ class CardController {
                     @PathVariable Long cardId,
                     @RequestAttribute Long userId) {
         service.removeCard(cardId, userId);
+    }
+
+    @PostMapping("/import")
+    CsvImportService.ImportResult importCsv(@PathVariable Long listId,
+                                            @RequestAttribute Long userId,
+                                            @RequestParam MultipartFile file) {
+        return csvImportService.importCsv(listId, userId, file);
     }
 
     record AddWordRequest(
