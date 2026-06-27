@@ -16,6 +16,7 @@ public class WordEnrichment {
     private String targetLang;
     private String cefrLevel;
     private String source;
+    private String mnemonic;
 
     @Column(nullable = false)
     private int version = 1;
@@ -34,5 +35,7 @@ public class WordEnrichment {
     public String getTargetLang() { return targetLang; }
     public String getCefrLevel() { return cefrLevel; }
     public String getSource() { return source; }
+    public String getMnemonic() { return mnemonic; }
+    public void setMnemonic(String mnemonic) { this.mnemonic = mnemonic; }
     public int getVersion() { return version; }
 }
