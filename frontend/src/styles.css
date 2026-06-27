@@ -993,6 +993,59 @@ h1 {
 .cloze-word--correct { color: #16a34a; }
 .cloze-word--wrong   { color: #dc2626; text-decoration: line-through; }
 
+/* ── Preset decks ────────────────────────────────── */
+.preset-section {
+  margin: 24px 0;
+}
+
+.preset-section-title {
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin-bottom: 14px;
+}
+
+.preset-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px;
+}
+
+.preset-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.preset-card-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--ink);
+}
+
+.preset-card-desc {
+  font-size: 0.8rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.preset-card-count {
+  font-size: 0.78rem;
+  color: var(--accent);
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.preset-card-btn {
+  margin-top: 10px;
+  width: 100%;
+}
+
 /* ── Mnemonics ───────────────────────────────────── */
 .mnemonic-toggle {
   font-size: 0.8rem;
