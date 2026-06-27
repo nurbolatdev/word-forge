@@ -7,6 +7,7 @@ record QuizQuestionDto(
         String lemma,
         int questionIndex,
         int totalCards,
+        String modality,
         List<OptionDto> options
 ) {
     record OptionDto(Long translationId, String text) {}

@@ -902,6 +902,76 @@ h1 {
   white-space: nowrap;
 }
 
+/* ── Typing mode ─────────────────────────────────── */
+.typing-answer-row {
+  display: flex;
+  gap: 10px;
+  margin: 12px 0;
+}
+
+.typing-input {
+  flex: 1;
+  padding: 10px 14px;
+  font-size: 1rem;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.typing-input:focus { border-color: var(--accent); }
+.typing-input--correct { border-color: #22c55e; background: #f0fdf4; }
+.typing-input--wrong   { border-color: #ef4444; background: #fef2f2; }
+
+.typing-correct-hint {
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+  margin: 4px 0 12px;
+}
+
+/* ── Mode select screen ──────────────────────────── */
+.mode-select-title {
+  font-size: 1.2rem;
+  margin-bottom: 24px;
+  color: var(--ink-soft);
+}
+
+.mode-cards {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.mode-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 180px;
+  padding: 28px 16px;
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.1s;
+  text-align: center;
+}
+
+.mode-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+
+.mode-card-icon { font-size: 2rem; }
+.mode-card-name { font-weight: 600; font-size: 1rem; color: var(--ink); }
+.mode-card-desc { font-size: 0.78rem; color: var(--muted); line-height: 1.4; }
+
+.modality-badge {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-left: auto;
+}
+
 /* ── CSV import feedback ─────────────────────────── */
 .import-msg {
   font-size: 0.875rem;

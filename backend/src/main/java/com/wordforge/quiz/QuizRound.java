@@ -25,11 +25,15 @@ public class QuizRound {
 
     private OffsetDateTime finishedAt;
 
+    @Column(nullable = false)
+    private String modality = "MCQ";
+
     protected QuizRound() {}
 
-    public QuizRound(Long userId, Long[] cardIds) {
+    public QuizRound(Long userId, Long[] cardIds, String modality) {
         this.userId = userId;
         this.cardIds = cardIds;
+        this.modality = modality;
     }
 
     public Long getId() { return id; }
@@ -39,4 +43,5 @@ public class QuizRound {
     public OffsetDateTime getStartedAt() { return startedAt; }
     public OffsetDateTime getFinishedAt() { return finishedAt; }
     public void setFinishedAt(OffsetDateTime finishedAt) { this.finishedAt = finishedAt; }
+    public String getModality() { return modality; }
 }
