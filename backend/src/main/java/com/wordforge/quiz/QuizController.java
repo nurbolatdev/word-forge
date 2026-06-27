@@ -21,7 +21,8 @@ class QuizController {
     @PostMapping
     QuizRoundDto startRound(@RequestAttribute Long userId,
                             @Valid @RequestBody StartRoundRequest req) {
-        return service.startRound(userId, req.cardIds());
+        String modality = req.modality() != null ? req.modality() : "MCQ";
+        return service.startRound(userId, req.cardIds(), modality);
     }
 
     @GetMapping("/{roundId}/question")
@@ -34,14 +35,18 @@ class QuizController {
                                 @RequestAttribute Long userId,
                                 @Valid @RequestBody AnswerRequest req) {
         return service.submitAnswer(roundId, userId, req.cardId(),
-                req.chosenTranslationId(), req.responseTimeMs());
+                req.chosenTranslationId(), req.typedAnswer(), req.responseTimeMs());
     }
 
-    record StartRoundRequest(@NotEmpty List<Long> cardIds) {}
+    record StartRoundRequest(
+            @NotEmpty List<Long> cardIds,
+            String modality
+    ) {}
 
     record AnswerRequest(
             @NotNull Long cardId,
-            @NotNull Long chosenTranslationId,
+            Long chosenTranslationId,
+            String typedAnswer,
             @NotNull @Min(0) Long responseTimeMs
     ) {}
 }

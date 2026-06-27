@@ -1,0 +1,1 @@
+ALTER TABLE quiz_rounds ADD COLUMN modality TEXT NOT NULL DEFAULT 'MCQ';

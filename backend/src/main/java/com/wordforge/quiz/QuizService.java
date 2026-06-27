@@ -45,13 +45,13 @@ class QuizService {
     }
 
     @Transactional
-    QuizRoundDto startRound(Long userId, List<Long> cardIds) {
+    QuizRoundDto startRound(Long userId, List<Long> cardIds, String modality) {
         roundRepo.findFirstByUserIdAndFinishedAtIsNullOrderByStartedAtDesc(userId)
                 .ifPresent(r -> {
                     r.setFinishedAt(OffsetDateTime.now());
                     roundRepo.save(r);
                 });
-        QuizRound round = roundRepo.save(new QuizRound(userId, cardIds.toArray(Long[]::new)));
+        QuizRound round = roundRepo.save(new QuizRound(userId, cardIds.toArray(Long[]::new), modality));
         return QuizRoundDto.from(round, 0);
     }
 
@@ -62,12 +62,12 @@ class QuizService {
         if (index >= cardIds.length) {
             throw new ResponseStatusException(HttpStatus.GONE, "Round is complete");
         }
-        return buildQuestion(cardIds[index], index, cardIds.length);
+        return buildQuestion(cardIds[index], index, cardIds.length, round.getModality());
     }
 
     @Transactional
     AnswerResultDto submitAnswer(Long roundId, Long userId, Long cardId,
-                                 Long chosenTranslationId, long responseTimeMs) {
+                                 Long chosenTranslationId, String typedAnswer, long responseTimeMs) {
         QuizRound round = requireRound(roundId, userId);
         if (reviewRepo.existsByRoundIdAndCardId(roundId, cardId)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Card already answered in this round");
@@ -76,7 +76,19 @@ class QuizService {
         UserCard card = cardRepo.findById(cardId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
-        boolean correct = Arrays.asList(card.getChosenTranslationIds()).contains(chosenTranslationId);
+        boolean correct;
+        String taskType;
+        if ("TYPING".equals(round.getModality())) {
+            taskType = "TYPING";
+            String normalised = typedAnswer == null ? "" : typedAnswer.strip().toLowerCase();
+            correct = Arrays.stream(card.getChosenTranslationIds())
+                    .map(id -> translationRepo.findById(id)
+                            .map(t -> t.getText().strip().toLowerCase()).orElse(""))
+                    .anyMatch(t -> t.equals(normalised));
+        } else {
+            taskType = "CHOICE_4";
+            correct = Arrays.asList(card.getChosenTranslationIds()).contains(chosenTranslationId);
+        }
 
         var gradeResult = schedulerService.grade(cardId, userId, correct, responseTimeMs);
 
@@ -85,7 +97,7 @@ class QuizService {
         String correctText = translationRepo.findById(correctTranslationId)
                 .map(WordTranslation::getText).orElse("");
 
-        reviewRepo.save(new Review(cardId, userId, roundId, "CHOICE_4", "TEXT",
+        reviewRepo.save(new Review(cardId, userId, roundId, taskType, "TEXT",
                 (short) gradeResult.grade(), correct, (int) responseTimeMs, false));
 
         Long[] cardIds = round.getCardIds();
@@ -97,12 +109,12 @@ class QuizService {
             roundRepo.save(round);
         }
 
-        QuizQuestionDto next = finished ? null : buildQuestion(cardIds[answered], answered, cardIds.length);
+        QuizQuestionDto next = finished ? null : buildQuestion(cardIds[answered], answered, cardIds.length, round.getModality());
         return new AnswerResultDto(cardId, correct, gradeResult.grade(),
                 correctTranslationId, correctText, finished, next);
     }
 
-    private QuizQuestionDto buildQuestion(Long cardId, int index, int total) {
+    private QuizQuestionDto buildQuestion(Long cardId, int index, int total, String modality) {
         UserCard card = cardRepo.findById(cardId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
@@ -126,12 +138,17 @@ class QuizService {
                 list.getTargetLang(), card.getWordId(), cefrLevel);
         List<WordTranslation> distractors = pool.stream().limit(3).toList();
 
-        List<QuizQuestionDto.OptionDto> options = new ArrayList<>();
-        options.add(new QuizQuestionDto.OptionDto(correct.getId(), correct.getText()));
-        distractors.forEach(d -> options.add(new QuizQuestionDto.OptionDto(d.getId(), d.getText())));
-        Collections.shuffle(options);
+        List<QuizQuestionDto.OptionDto> options;
+        if ("TYPING".equals(modality)) {
+            options = List.of();
+        } else {
+            options = new ArrayList<>();
+            options.add(new QuizQuestionDto.OptionDto(correct.getId(), correct.getText()));
+            distractors.forEach(d -> options.add(new QuizQuestionDto.OptionDto(d.getId(), d.getText())));
+            Collections.shuffle(options);
+        }
 
-        return new QuizQuestionDto(cardId, card.getLemma(), index, total, options);
+        return new QuizQuestionDto(cardId, card.getLemma(), index, total, modality, options);
     }
 
     private QuizRound requireRound(Long roundId, Long userId) {

@@ -1,5 +1,7 @@
 import { api } from './client';
 
+export type QuizModality = 'MCQ' | 'TYPING';
+
 export interface QuizRound {
   id: number;
   userId: number;
@@ -7,6 +9,7 @@ export interface QuizRound {
   totalCards: number;
   answeredCards: number;
   finished: boolean;
+  modality: QuizModality;
   startedAt: string;
   finishedAt: string | null;
 }
@@ -21,6 +24,7 @@ export interface QuizQuestion {
   lemma: string;
   questionIndex: number;
   totalCards: number;
+  modality: QuizModality;
   options: QuizOption[];
 }
 
@@ -35,13 +39,16 @@ export interface AnswerResult {
 }
 
 export const quizApi = {
-  startRound: (cardIds: number[]) =>
-    api.post<QuizRound>('/api/quiz/rounds', { cardIds }),
+  startRound: (cardIds: number[], modality: QuizModality = 'MCQ') =>
+    api.post<QuizRound>('/api/quiz/rounds', { cardIds, modality }),
 
   getQuestion: (roundId: number) =>
     api.get<QuizQuestion>(`/api/quiz/rounds/${roundId}/question`),
 
   submitAnswer: (roundId: number, body: {
-    cardId: number; chosenTranslationId: number; responseTimeMs: number;
+    cardId: number;
+    chosenTranslationId?: number;
+    typedAnswer?: string;
+    responseTimeMs: number;
   }) => api.post<AnswerResult>(`/api/quiz/rounds/${roundId}/answer`, body),
 };
