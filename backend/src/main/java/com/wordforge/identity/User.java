@@ -25,6 +25,9 @@ public class User {
 
     private String nativeLang;
 
+    @Column(nullable = false)
+    private int dailyGoal = 20;
+
     @Column(nullable = false, updatable = false)
     private OffsetDateTime createdAt = OffsetDateTime.now();
 
@@ -45,5 +48,7 @@ public class User {
     public void setUiTheme(String uiTheme) { this.uiTheme = uiTheme; }
     public String getNativeLang() { return nativeLang; }
     public void setNativeLang(String nativeLang) { this.nativeLang = nativeLang; }
+    public int getDailyGoal() { return dailyGoal; }
+    public void setDailyGoal(int dailyGoal) { this.dailyGoal = dailyGoal; }
     public OffsetDateTime getCreatedAt() { return createdAt; }
 }

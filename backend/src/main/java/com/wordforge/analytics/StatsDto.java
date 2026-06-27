@@ -5,5 +5,6 @@ record StatsDto(
         int dueToday,
         int reviewedToday,
         int streak,
-        int totalReviews
+        int totalReviews,
+        int dailyGoal
 ) {}
