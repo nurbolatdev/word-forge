@@ -61,8 +61,9 @@ public class GroqEnrichmentService implements EnrichmentService {
                     .body(GroqResponse.class)
                     .choices().get(0).message().content();
 
-            // Strip markdown code fences if present
+            // Strip markdown code fences and trailing commas (common LLM artifacts)
             String json = raw.replaceAll("(?s)```json\\s*|```\\s*", "").strip();
+            json = json.replaceAll(",\\s*([}\\]])", "$1");
             return parseResult(json, lemma);
 
         } catch (Exception e) {
@@ -74,36 +75,24 @@ public class GroqEnrichmentService implements EnrichmentService {
     private String buildPrompt(String lemma, String targetLanguage) {
         String lang = "RU".equalsIgnoreCase(targetLanguage) ? "Russian" : targetLanguage;
         return """
-                For the English word "%s", provide:
-                1. Its CEFR level (A1, A2, B1, B2, C1, or C2).
-                2. Two natural example sentences where the word appears naturally in context.
-                3. A %s translation of each sentence.
-                4. A short memorable mnemonic hint to remember the word.
-
-                Return ONLY this JSON, nothing else:
-                {
-                  "cefrLevel": "B1",
-                  "mnemonic": "short hint here",
-                  "examples": [
-                    {"text": "English sentence with %s.", "translation": "%s translation"},
-                    {"text": "Another English sentence with %s.", "translation": "%s translation"}
-                  ]
-                }
-                """.formatted(lemma, lang, lemma, lang, lemma, lang);
+                For the English word "%s", return ONLY this JSON with no extra text:
+                {"cefrLevel":"B1","mnemonic":"short hint","sentence":"Natural sentence using %s here.","translation":"%s translation of the sentence"}
+                Rules: cefrLevel is A1/A2/B1/B2/C1/C2. The sentence MUST contain the word "%s" literally. mnemonic is a short memory tip. translation is the %s translation.
+                """.formatted(lemma, lemma, lang, lemma, lang);
     }
 
     private EnrichmentResult parseResult(String json, String lemma) throws Exception {
         var node = mapper.readTree(json);
         String cefr = node.path("cefrLevel").asText("B1");
         String mnemonic = node.path("mnemonic").asText(null);
+        String sentence = node.path("sentence").asText(null);
+        String translation = node.path("translation").asText("(перевод недоступен)");
 
-        List<EnrichmentResult.ExampleData> examples = mapper.readerForListOf(ExampleNode.class)
-                .<List<ExampleNode>>readValue(node.path("examples"))
-                .stream()
-                .map(e -> new EnrichmentResult.ExampleData(e.text(), e.translation()))
-                .toList();
+        if (sentence == null || sentence.isBlank()) return fallback(lemma);
 
-        if (examples.isEmpty()) return fallback(lemma);
+        List<EnrichmentResult.ExampleData> examples = List.of(
+                new EnrichmentResult.ExampleData(sentence, translation)
+        );
         return new EnrichmentResult(cefr, mnemonic, examples);
     }
 
