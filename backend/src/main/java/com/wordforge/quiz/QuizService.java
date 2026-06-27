@@ -1,6 +1,7 @@
 package com.wordforge.quiz;
 
 import com.wordforge.enrichment.WordEnrichmentRepository;
+import com.wordforge.enrichment.WordExampleRepository;
 import com.wordforge.lists.UserCard;
 import com.wordforge.lists.UserCardRepository;
 import com.wordforge.lists.WordList;
@@ -18,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.regex.Pattern;
 
 @Service
 class QuizService {
@@ -28,12 +30,14 @@ class QuizService {
     private final WordListRepository listRepo;
     private final WordTranslationRepository translationRepo;
     private final WordEnrichmentRepository enrichmentRepo;
+    private final WordExampleRepository exampleRepo;
     private final SchedulerService schedulerService;
 
     QuizService(QuizRoundRepository roundRepo, ReviewRepository reviewRepo,
                 UserCardRepository cardRepo, WordListRepository listRepo,
                 WordTranslationRepository translationRepo,
                 WordEnrichmentRepository enrichmentRepo,
+                WordExampleRepository exampleRepo,
                 SchedulerService schedulerService) {
         this.roundRepo = roundRepo;
         this.reviewRepo = reviewRepo;
@@ -41,6 +45,7 @@ class QuizService {
         this.listRepo = listRepo;
         this.translationRepo = translationRepo;
         this.enrichmentRepo = enrichmentRepo;
+        this.exampleRepo = exampleRepo;
         this.schedulerService = schedulerService;
     }
 
@@ -78,13 +83,19 @@ class QuizService {
 
         boolean correct;
         String taskType;
-        if ("TYPING".equals(round.getModality())) {
+        String modality = round.getModality();
+
+        if ("CLOZE".equals(modality)) {
+            taskType = "CLOZE";
+            String typed = typedAnswer == null ? "" : typedAnswer.strip().toLowerCase();
+            correct = card.getLemma().strip().toLowerCase().equals(typed);
+        } else if ("TYPING".equals(modality)) {
             taskType = "TYPING";
-            String normalised = typedAnswer == null ? "" : typedAnswer.strip().toLowerCase();
+            String typed = typedAnswer == null ? "" : typedAnswer.strip().toLowerCase();
             correct = Arrays.stream(card.getChosenTranslationIds())
                     .map(id -> translationRepo.findById(id)
                             .map(t -> t.getText().strip().toLowerCase()).orElse(""))
-                    .anyMatch(t -> t.equals(normalised));
+                    .anyMatch(t -> t.equals(typed));
         } else {
             taskType = "CHOICE_4";
             correct = Arrays.asList(card.getChosenTranslationIds()).contains(chosenTranslationId);
@@ -94,8 +105,9 @@ class QuizService {
 
         Long correctTranslationId = card.getChosenTranslationIds().length > 0
                 ? card.getChosenTranslationIds()[0] : chosenTranslationId;
-        String correctText = translationRepo.findById(correctTranslationId)
-                .map(WordTranslation::getText).orElse("");
+        String correctText = "CLOZE".equals(modality)
+                ? card.getLemma()
+                : translationRepo.findById(correctTranslationId).map(WordTranslation::getText).orElse("");
 
         reviewRepo.save(new Review(cardId, userId, roundId, taskType, "TEXT",
                 (short) gradeResult.grade(), correct, (int) responseTimeMs, false));
@@ -109,7 +121,8 @@ class QuizService {
             roundRepo.save(round);
         }
 
-        QuizQuestionDto next = finished ? null : buildQuestion(cardIds[answered], answered, cardIds.length, round.getModality());
+        QuizQuestionDto next = finished ? null
+                : buildQuestion(cardIds[answered], answered, cardIds.length, modality);
         return new AnswerResultDto(cardId, correct, gradeResult.grade(),
                 correctTranslationId, correctText, finished, next);
     }
@@ -128,12 +141,16 @@ class QuizService {
                     "Card has no chosen translations");
         }
 
+        if ("CLOZE".equals(modality)) {
+            String clozeText = buildClozeText(card);
+            return new QuizQuestionDto(cardId, card.getLemma(), index, total, modality, clozeText, List.of());
+        }
+
         WordTranslation correct = translationRepo.findById(correctTranslationId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
         String cefrLevel = enrichmentRepo.findFirstByWordId(card.getWordId())
-                .map(e -> e.getCefrLevel())
-                .orElse("B1");
+                .map(e -> e.getCefrLevel()).orElse("B1");
         List<WordTranslation> pool = translationRepo.findSmartDistractors(
                 list.getTargetLang(), card.getWordId(), cefrLevel);
         List<WordTranslation> distractors = pool.stream().limit(3).toList();
@@ -148,7 +165,21 @@ class QuizService {
             Collections.shuffle(options);
         }
 
-        return new QuizQuestionDto(cardId, card.getLemma(), index, total, modality, options);
+        return new QuizQuestionDto(cardId, card.getLemma(), index, total, modality, null, options);
+    }
+
+    private String buildClozeText(UserCard card) {
+        var enrichmentOpt = enrichmentRepo.findFirstByWordId(card.getWordId());
+        if (enrichmentOpt.isEmpty()) return "Fill in: ___";
+
+        var examples = exampleRepo.findByEnrichmentId(enrichmentOpt.get().getId());
+        if (examples.isEmpty()) return "Fill in: ___";
+
+        String sentence = examples.get(0).getText();
+        String pattern = "(?i)\\b" + Pattern.quote(card.getLemma()) + "\\b";
+        String blanked = sentence.replaceAll(pattern, "___");
+        // If the lemma wasn't found literally, append a blank so the UI still makes sense
+        return blanked.contains("___") ? blanked : sentence + " [___]";
     }
 
     private QuizRound requireRound(Long roundId, Long userId) {
