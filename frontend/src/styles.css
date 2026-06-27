@@ -1057,6 +1057,80 @@ h1 {
   margin: 4px 0 12px;
 }
 
+/* ── List select screen ──────────────────────────── */
+.list-select-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+  width: 100%;
+  max-width: 560px;
+  margin-bottom: 8px;
+}
+
+.list-select-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 20px 16px;
+  border: 2px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  cursor: pointer;
+  transition: border-color 160ms, background 160ms, transform 120ms;
+  font-family: inherit;
+  text-align: center;
+}
+
+.list-select-card:hover {
+  border-color: var(--joy);
+  transform: translateY(-2px);
+}
+
+.list-select-card--active {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--bg);
+}
+
+.list-select-icon {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.list-select-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.list-select-lang {
+  font-size: 0.7rem;
+  font-family: 'IBM Plex Mono', monospace;
+  opacity: 0.55;
+}
+
+.list-select-count {
+  font-size: 0.72rem;
+  opacity: 0.5;
+  margin-top: 2px;
+}
+
+.list-select-card--active .list-select-lang,
+.list-select-card--active .list-select-count {
+  opacity: 0.6;
+}
+
+.quiz-list-label {
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  font-style: italic;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 200px;
+}
+
 /* ── Mode select screen ──────────────────────────── */
 .mode-select-title {
   font-size: 1.2rem;

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { listsApi } from '../api/lists';
+import { WordList, listsApi } from '../api/lists';
 import { AnswerResult, QuizDirection, QuizModality, QuizQuestion, quizApi } from '../api/quiz';
 import { AudioButton } from '../components/AudioButton';
 
@@ -7,10 +7,12 @@ interface Props {
   onBack: () => void;
 }
 
-type Phase = 'mode-select' | 'loading' | 'empty' | 'question' | 'result' | 'done';
+type Phase = 'list-select' | 'mode-select' | 'loading' | 'empty' | 'question' | 'result' | 'done';
 
 export function QuizPage({ onBack }: Props) {
-  const [phase, setPhase] = useState<Phase>('mode-select');
+  const [phase, setPhase] = useState<Phase>('list-select');
+  const [lists, setLists] = useState<WordList[]>([]);
+  const [selectedListId, setSelectedListId] = useState<number | 'all'>('all');
   const [modality, setModality] = useState<QuizModality>('MCQ');
   const [direction, setDirection] = useState<QuizDirection>('EN_RU');
   const [question, setQuestion] = useState<QuizQuestion | null>(null);
@@ -22,6 +24,10 @@ export function QuizPage({ onBack }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    listsApi.getAll().then(setLists).catch(console.error);
+  }, []);
+
+  useEffect(() => {
     if (phase === 'question' && (question?.modality === 'TYPING' || question?.modality === 'CLOZE')) {
       inputRef.current?.focus();
     }
@@ -31,14 +37,19 @@ export function QuizPage({ onBack }: Props) {
     setPhase('loading');
     setError('');
     try {
-      const allLists = await listsApi.getAll();
-      const allCards = (await Promise.all(
-        allLists.map((l) => listsApi.getCards(l.id))
-      )).flat().filter((c) => c.chosenTranslationIds.length > 0);
+      let cardIds: number[];
+      if (selectedListId === 'all') {
+        const allCards = (await Promise.all(
+          lists.map((l) => listsApi.getCards(l.id))
+        )).flat().filter((c) => c.chosenTranslationIds.length > 0);
+        cardIds = allCards.map((c) => c.id);
+      } else {
+        const cards = await listsApi.getCards(selectedListId);
+        cardIds = cards.filter((c) => c.chosenTranslationIds.length > 0).map((c) => c.id);
+      }
 
-      if (allCards.length === 0) { setPhase('empty'); return; }
+      if (cardIds.length === 0) { setPhase('empty'); return; }
 
-      const cardIds = allCards.map((c) => c.id);
       const round = await quizApi.startRound(cardIds, selectedModality, selectedDirection);
       setRoundId(round.id);
       const q = await quizApi.getQuestion(round.id);
@@ -96,20 +107,76 @@ export function QuizPage({ onBack }: Props) {
     }
   }
 
+  const selectedList = lists.find((l) => l.id === selectedListId);
   const promptLang = question?.direction === 'RU_EN' ? 'RU' : 'EN';
   const answerLabel = question?.direction === 'RU_EN' ? 'English word…' : 'Translation…';
 
-  /* ── Mode select screen ── */
-  if (phase === 'mode-select') {
+  /* ── Step 1: List selection ── */
+  if (phase === 'list-select') {
     return (
       <div className="quiz-shell">
         <header className="quiz-header">
           <button className="btn-ghost" onClick={onBack}>← Back</button>
         </header>
         <div className="quiz-center">
+          <h2 className="mode-select-title">Choose a list to practice</h2>
+          <div className="list-select-grid">
+            {/* All lists option */}
+            <button
+              className={`list-select-card ${selectedListId === 'all' ? 'list-select-card--active' : ''}`}
+              onClick={() => setSelectedListId('all')}
+            >
+              <span className="list-select-icon">📚</span>
+              <span className="list-select-name">All lists</span>
+              <span className="list-select-count">{lists.reduce((s, l) => s + l.wordCount, 0)} words</span>
+            </button>
+
+            {lists.map((list) => (
+              <button
+                key={list.id}
+                className={`list-select-card ${selectedListId === list.id ? 'list-select-card--active' : ''}`}
+                onClick={() => setSelectedListId(list.id)}
+              >
+                <span className="list-select-icon">📖</span>
+                <span className="list-select-name">{list.title}</span>
+                <span className="list-select-lang">{list.sourceLang} → {list.targetLang}</span>
+                <span className="list-select-count">{list.wordCount} words</span>
+              </button>
+            ))}
+          </div>
+
+          {lists.length === 0 && (
+            <p className="empty-state">No lists yet. Create a list and add words first.</p>
+          )}
+
+          <button
+            className="btn-primary"
+            style={{ marginTop: 24, minWidth: 180 }}
+            disabled={lists.length === 0}
+            onClick={() => setPhase('mode-select')}
+          >
+            Continue →
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  /* ── Step 2: Mode selection ── */
+  if (phase === 'mode-select') {
+    const listLabel = selectedListId === 'all'
+      ? 'All lists'
+      : (selectedList?.title ?? 'Selected list');
+
+    return (
+      <div className="quiz-shell">
+        <header className="quiz-header">
+          <button className="btn-ghost" onClick={() => setPhase('list-select')}>← Back</button>
+          <span className="quiz-list-label">📖 {listLabel}</span>
+        </header>
+        <div className="quiz-center">
           <h2 className="mode-select-title">Choose practice mode</h2>
 
-          {/* Direction toggle */}
           <div className="direction-toggle">
             <button
               className={`direction-btn ${direction === 'EN_RU' ? 'direction-btn--active' : ''}`}
@@ -139,7 +206,6 @@ export function QuizPage({ onBack }: Props) {
             <button
               className="mode-card"
               onClick={() => { setModality('CLOZE'); loadRound('CLOZE', direction); }}
-              title="Cloze is always EN→RU"
             >
               <span className="mode-card-icon">📝</span>
               <span className="mode-card-name">Cloze</span>
@@ -152,6 +218,7 @@ export function QuizPage({ onBack }: Props) {
     );
   }
 
+  /* ── Quiz in progress ── */
   return (
     <div className="quiz-shell">
       <header className="quiz-header">
@@ -173,15 +240,14 @@ export function QuizPage({ onBack }: Props) {
 
       {phase === 'empty' && (
         <div className="quiz-center">
-          <p>No cards with translations yet.</p>
-          <p>Add words to a list and pick translations first.</p>
-          <button className="btn-primary" onClick={onBack}>Go to Lists</button>
+          <p>No cards with translations in this list yet.</p>
+          <p>Add words and pick translations first.</p>
+          <button className="btn-primary" onClick={() => setPhase('list-select')}>Choose another list</button>
         </div>
       )}
 
       {(phase === 'question' || phase === 'result') && question && (
         <div className="quiz-card">
-          {/* Show word prompt for MCQ and TYPING only — CLOZE hides it intentionally */}
           {question.modality !== 'CLOZE' && (
             <div className={`quiz-drum ${phase === 'question' ? 'quiz-drum--enter' : ''}`}>
               <span className="quiz-lemma">{question.promptText}</span>
@@ -189,7 +255,6 @@ export function QuizPage({ onBack }: Props) {
             </div>
           )}
 
-          {/* MCQ mode */}
           {question.modality === 'MCQ' && (
             <>
               <p className="quiz-prompt">
@@ -217,12 +282,11 @@ export function QuizPage({ onBack }: Props) {
             </>
           )}
 
-          {/* Cloze mode */}
           {question.modality === 'CLOZE' && (
             <>
               <p className="quiz-prompt">Fill in the missing word:</p>
               <p className="cloze-sentence">
-                {(question.clozeText ?? 'Fill in: ___').split('___').map((part, i, arr) => (
+                {(question.clozeText ?? '___').split('___').map((part, i, arr) => (
                   <span key={i}>
                     {part}
                     {i < arr.length - 1 && (
@@ -247,9 +311,7 @@ export function QuizPage({ onBack }: Props) {
                   autoComplete="off"
                 />
                 {phase === 'question' && (
-                  <button className="btn-primary" onClick={answerTyping} disabled={!typedAnswer.trim()}>
-                    Check
-                  </button>
+                  <button className="btn-primary" onClick={answerTyping} disabled={!typedAnswer.trim()}>Check</button>
                 )}
               </div>
               {phase === 'result' && result && !result.correct && (
@@ -258,7 +320,6 @@ export function QuizPage({ onBack }: Props) {
             </>
           )}
 
-          {/* Typing mode */}
           {question.modality === 'TYPING' && (
             <>
               <p className="quiz-prompt">
@@ -276,9 +337,7 @@ export function QuizPage({ onBack }: Props) {
                   autoComplete="off"
                 />
                 {phase === 'question' && (
-                  <button className="btn-primary" onClick={answerTyping} disabled={!typedAnswer.trim()}>
-                    Check
-                  </button>
+                  <button className="btn-primary" onClick={answerTyping} disabled={!typedAnswer.trim()}>Check</button>
                 )}
               </div>
               {phase === 'result' && result && !result.correct && (
@@ -305,7 +364,7 @@ export function QuizPage({ onBack }: Props) {
           <h2>Round complete!</h2>
           <p>All cards reviewed for today.</p>
           <button className="btn-primary" onClick={() => setPhase('mode-select')}>New round</button>
-          <button className="btn-ghost" onClick={onBack}>Back to Lists</button>
+          <button className="btn-ghost" onClick={() => setPhase('list-select')}>Change list</button>
         </div>
       )}
 
