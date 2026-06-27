@@ -39,8 +39,9 @@ class WordEnrichmentService {
                         exampleRepo.findByEnrichmentId(existing.getId())))
                 .orElseGet(() -> {
                     EnrichmentResult result = enrichmentService.enrich(lemma, sourceLang, tLang);
-                    WordEnrichment saved = enrichmentRepo.save(
-                            new WordEnrichment(wordId, tLang, result.cefrLevel(), "mock-llm"));
+                    WordEnrichment entity = new WordEnrichment(wordId, tLang, result.cefrLevel(), "mock-llm");
+                    entity.setMnemonic(result.mnemonic());
+                    WordEnrichment saved = enrichmentRepo.save(entity);
                     List<WordExample> examples = result.examples().stream()
                             .map(ex -> exampleRepo.save(new WordExample(
                                     saved.getId(), ex.text(), ex.translation(), (short) 1)))

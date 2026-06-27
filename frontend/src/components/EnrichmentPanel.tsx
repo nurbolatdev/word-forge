@@ -12,6 +12,7 @@ export function EnrichmentPanel({ wordId, lemma, sourceLang, targetLang }: Props
   const [data, setData] = useState<Enrichment | null>(null);
   const [loading, setLoading] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [showMnemonic, setShowMnemonic] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -36,8 +37,22 @@ export function EnrichmentPanel({ wordId, lemma, sourceLang, targetLang }: Props
     <div className="enrichment-panel">
       <div className="enrichment-header">
         <span className="cefr-badge">{data?.cefrLevel ?? '…'}</span>
+        {data?.mnemonic && (
+          <button
+            className={`btn-ghost mnemonic-toggle ${showMnemonic ? 'mnemonic-toggle--active' : ''}`}
+            onClick={() => setShowMnemonic(v => !v)}
+            title="Memory hint"
+          >
+            💡 Hint
+          </button>
+        )}
         <button className="btn-ghost enrich-close" onClick={() => setExpanded(false)}>✕</button>
       </div>
+
+      {showMnemonic && data?.mnemonic && (
+        <p className="mnemonic-text">{data.mnemonic}</p>
+      )}
+
       {data && data.examples.length > 0 && (
         <ul className="example-list">
           {data.examples.map((ex) => (

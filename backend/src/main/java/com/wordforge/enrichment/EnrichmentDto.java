@@ -6,6 +6,7 @@ record EnrichmentDto(
         Long wordId,
         String targetLang,
         String cefrLevel,
+        String mnemonic,
         List<ExampleDto> examples
 ) {
     record ExampleDto(Long id, String text, String translation) {}
@@ -15,6 +16,7 @@ record EnrichmentDto(
                 enrichment.getWordId(),
                 enrichment.getTargetLang(),
                 enrichment.getCefrLevel(),
+                enrichment.getMnemonic(),
                 examples.stream()
                         .map(e -> new ExampleDto(e.getId(), e.getText(), e.getTranslation()))
                         .toList()

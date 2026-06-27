@@ -10,6 +10,7 @@ export interface Enrichment {
   wordId: number;
   targetLang: string;
   cefrLevel: string;
+  mnemonic: string | null;
   examples: EnrichmentExample[];
 }
 
