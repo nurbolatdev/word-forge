@@ -4,9 +4,10 @@ import { listsApi, WordList } from '../api/lists';
 interface Props {
   onSelectList: (list: WordList) => void;
   onStartQuiz: () => void;
+  onShowStats: () => void;
 }
 
-export function HomePage({ onSelectList, onStartQuiz }: Props) {
+export function HomePage({ onSelectList, onStartQuiz, onShowStats }: Props) {
   const [lists, setLists] = useState<WordList[]>([]);
   const [creating, setCreating] = useState(false);
   const [title, setTitle] = useState('');
@@ -42,6 +43,7 @@ export function HomePage({ onSelectList, onStartQuiz }: Props) {
     <div className="page">
       <header className="page-header">
         <h1>My Lists</h1>
+        <button className="btn-ghost" onClick={onShowStats}>Stats</button>
         <button className="btn-accent" onClick={onStartQuiz}>Practice ▶</button>
         <button className="btn-primary" onClick={() => setCreating(true)}>+ New list</button>
       </header>
