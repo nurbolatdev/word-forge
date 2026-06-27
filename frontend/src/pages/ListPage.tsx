@@ -40,22 +40,20 @@ function FlipCard({
 
         {/* Back */}
         <div className="flip-card-face flip-card-back">
-          <div className="flip-back-content">
-            <span className="flip-hint-label">{sourceLang} → {targetLang}</span>
-            {card.translations.length > 0 ? (
-              <ul className="flip-translations">
-                {card.translations.map((t, i) => (
-                  <li key={i} className="flip-translation-item">
-                    <AudioButton text={t} lang={targetLang} />
-                    <span>{t}</span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="flip-no-translation">No translation selected yet</p>
-            )}
-            <span className="flip-tap-hint">Tap to flip back</span>
-          </div>
+          <span className="flip-hint-label">{sourceLang} → {targetLang}</span>
+          {card.translations.length > 0 ? (
+            <ul className="flip-translations">
+              {card.translations.map((t, i) => (
+                <li key={i} className="flip-translation-item">
+                  <AudioButton text={t} lang={targetLang} />
+                  <span>{t}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="flip-no-translation">No translation selected yet</p>
+          )}
+          <span className="flip-tap-hint">tap to flip back</span>
         </div>
       </div>
     </li>
