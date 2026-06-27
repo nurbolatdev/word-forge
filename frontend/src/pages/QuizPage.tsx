@@ -135,7 +135,9 @@ export function QuizPage({ onBack }: Props) {
             {question.questionIndex + 1} / {question.totalCards}
           </span>
         )}
-        <span className="modality-badge">{modality === 'TYPING' ? '⌨ Typing' : '☑ MCQ'}</span>
+        <span className="modality-badge">
+          {modality === 'TYPING' ? '⌨ Typing' : modality === 'CLOZE' ? '📝 Cloze' : '☑ MCQ'}
+        </span>
       </header>
 
       {phase === 'loading' && <div className="quiz-center"><span className="spinner">…</span></div>}

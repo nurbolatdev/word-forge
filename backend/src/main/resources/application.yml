@@ -4,9 +4,9 @@ spring:
   profiles:
     default: dev
   datasource:
-    url: jdbc:postgresql://localhost:5432/wordforge
-    username: wordforge
-    password: wordforge
+    url: jdbc:postgresql://localhost:5433/wordforage
+    username: postgrest
+    password: postgrest
   jpa:
     hibernate:
       ddl-auto: validate
