@@ -972,6 +972,27 @@ h1 {
   margin-left: auto;
 }
 
+/* ── Cloze mode ──────────────────────────────────── */
+.cloze-sentence {
+  font-size: 1.15rem;
+  line-height: 1.7;
+  margin: 16px 0;
+  color: var(--ink);
+}
+
+.cloze-blank {
+  display: inline-block;
+  width: 80px;
+  height: 2px;
+  background: var(--ink);
+  vertical-align: middle;
+  margin: 0 4px;
+  border-radius: 1px;
+}
+
+.cloze-word--correct { color: #16a34a; }
+.cloze-word--wrong   { color: #dc2626; text-decoration: line-through; }
+
 /* ── CSV import feedback ─────────────────────────── */
 .import-msg {
   font-size: 0.875rem;

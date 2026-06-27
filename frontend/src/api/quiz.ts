@@ -1,6 +1,6 @@
 import { api } from './client';
 
-export type QuizModality = 'MCQ' | 'TYPING';
+export type QuizModality = 'MCQ' | 'TYPING' | 'CLOZE';
 
 export interface QuizRound {
   id: number;
@@ -25,6 +25,7 @@ export interface QuizQuestion {
   questionIndex: number;
   totalCards: number;
   modality: QuizModality;
+  clozeText: string | null;
   options: QuizOption[];
 }
 

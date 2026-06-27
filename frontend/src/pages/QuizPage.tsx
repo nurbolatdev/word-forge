@@ -115,6 +115,11 @@ export function QuizPage({ onBack }: Props) {
               <span className="mode-card-name">Typing</span>
               <span className="mode-card-desc">Type the translation from memory</span>
             </button>
+            <button className="mode-card" onClick={() => { setModality('CLOZE'); loadRound('CLOZE'); }}>
+              <span className="mode-card-icon">📝</span>
+              <span className="mode-card-name">Cloze</span>
+              <span className="mode-card-desc">Fill in the missing word in a sentence</span>
+            </button>
           </div>
         </div>
       </div>
@@ -173,6 +178,47 @@ export function QuizPage({ onBack }: Props) {
                   );
                 })}
               </div>
+            </>
+          )}
+
+          {/* Cloze mode */}
+          {question.modality === 'CLOZE' && (
+            <>
+              <p className="quiz-prompt">Fill in the missing word:</p>
+              <p className="cloze-sentence">
+                {(question.clozeText ?? 'Fill in: ___').split('___').map((part, i, arr) => (
+                  <span key={i}>
+                    {part}
+                    {i < arr.length - 1 && (
+                      phase === 'question'
+                        ? <span className="cloze-blank" />
+                        : <strong className={result?.correct ? 'cloze-word--correct' : 'cloze-word--wrong'}>
+                            {typedAnswer || '___'}
+                          </strong>
+                    )}
+                  </span>
+                ))}
+              </p>
+              <div className="typing-answer-row">
+                <input
+                  ref={inputRef}
+                  className={`typing-input ${phase === 'result' ? (result?.correct ? 'typing-input--correct' : 'typing-input--wrong') : ''}`}
+                  value={typedAnswer}
+                  onChange={e => setTypedAnswer(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && phase === 'question' && answerTyping()}
+                  disabled={phase === 'result'}
+                  placeholder="Type the word…"
+                  autoComplete="off"
+                />
+                {phase === 'question' && (
+                  <button className="btn-primary" onClick={answerTyping} disabled={!typedAnswer.trim()}>
+                    Check
+                  </button>
+                )}
+              </div>
+              {phase === 'result' && result && !result.correct && (
+                <p className="typing-correct-hint">Answer: <strong>{result.correctTranslationText}</strong></p>
+              )}
             </>
           )}
 
