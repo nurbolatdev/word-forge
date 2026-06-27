@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { analyticsApi, Stats } from '../api/analytics';
 import { listsApi, WordList } from '../api/lists';
 
 interface Props {
@@ -9,12 +10,14 @@ interface Props {
 
 export function HomePage({ onSelectList, onStartQuiz, onShowStats }: Props) {
   const [lists, setLists] = useState<WordList[]>([]);
+  const [stats, setStats] = useState<Stats | null>(null);
   const [creating, setCreating] = useState(false);
   const [title, setTitle] = useState('');
   const [error, setError] = useState('');
 
   useEffect(() => {
     listsApi.getAll().then(setLists).catch(console.error);
+    analyticsApi.getStats().then(setStats).catch(console.error);
   }, []);
 
   async function createList() {
@@ -39,6 +42,8 @@ export function HomePage({ onSelectList, onStartQuiz, onShowStats }: Props) {
     setLists((prev) => prev.filter((l) => l.id !== id));
   }
 
+  const progress = stats ? Math.min(stats.reviewedToday / stats.dailyGoal, 1) : 0;
+
   return (
     <div className="page">
       <header className="page-header">
@@ -47,6 +52,18 @@ export function HomePage({ onSelectList, onStartQuiz, onShowStats }: Props) {
         <button className="btn-accent" onClick={onStartQuiz}>Practice ▶</button>
         <button className="btn-primary" onClick={() => setCreating(true)}>+ New list</button>
       </header>
+
+      {stats && (
+        <div className="home-goal-bar" onClick={onShowStats} title="View progress">
+          <div className="home-goal-meta">
+            <span>{stats.streak > 0 ? `🔥 ${stats.streak}-day streak` : 'Start your streak today'}</span>
+            <span>{stats.reviewedToday} / {stats.dailyGoal} today</span>
+          </div>
+          <div className="progress-bar-wrap">
+            <div className="progress-bar-fill" style={{ width: `${progress * 100}%` }} />
+          </div>
+        </div>
+      )}
 
       {creating && (
         <div className="create-list-form">
