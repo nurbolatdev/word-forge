@@ -7,4 +7,5 @@ public interface WordEnrichmentRepository extends JpaRepository<WordEnrichment, 
     Optional<WordEnrichment> findByWordIdAndTargetLangAndCefrLevel(
             Long wordId, String targetLang, String cefrLevel);
     Optional<WordEnrichment> findByWordIdAndTargetLang(Long wordId, String targetLang);
+    Optional<WordEnrichment> findFirstByWordId(Long wordId);
 }

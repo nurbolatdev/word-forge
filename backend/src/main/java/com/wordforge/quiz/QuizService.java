@@ -1,5 +1,6 @@
 package com.wordforge.quiz;
 
+import com.wordforge.enrichment.WordEnrichmentRepository;
 import com.wordforge.lists.UserCard;
 import com.wordforge.lists.UserCardRepository;
 import com.wordforge.lists.WordList;
@@ -26,16 +27,20 @@ class QuizService {
     private final UserCardRepository cardRepo;
     private final WordListRepository listRepo;
     private final WordTranslationRepository translationRepo;
+    private final WordEnrichmentRepository enrichmentRepo;
     private final SchedulerService schedulerService;
 
     QuizService(QuizRoundRepository roundRepo, ReviewRepository reviewRepo,
                 UserCardRepository cardRepo, WordListRepository listRepo,
-                WordTranslationRepository translationRepo, SchedulerService schedulerService) {
+                WordTranslationRepository translationRepo,
+                WordEnrichmentRepository enrichmentRepo,
+                SchedulerService schedulerService) {
         this.roundRepo = roundRepo;
         this.reviewRepo = reviewRepo;
         this.cardRepo = cardRepo;
         this.listRepo = listRepo;
         this.translationRepo = translationRepo;
+        this.enrichmentRepo = enrichmentRepo;
         this.schedulerService = schedulerService;
     }
 
@@ -114,11 +119,11 @@ class QuizService {
         WordTranslation correct = translationRepo.findById(correctTranslationId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
-        List<WordTranslation> pool = translationRepo.findByTargetLang(list.getTargetLang())
-                .stream()
-                .filter(t -> !t.getWordId().equals(card.getWordId()))
-                .collect(java.util.stream.Collectors.toList());
-        Collections.shuffle(pool);
+        String cefrLevel = enrichmentRepo.findFirstByWordId(card.getWordId())
+                .map(e -> e.getCefrLevel())
+                .orElse("B1");
+        List<WordTranslation> pool = translationRepo.findSmartDistractors(
+                list.getTargetLang(), card.getWordId(), cefrLevel);
         List<WordTranslation> distractors = pool.stream().limit(3).toList();
 
         List<QuizQuestionDto.OptionDto> options = new ArrayList<>();
